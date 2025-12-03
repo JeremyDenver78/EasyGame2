@@ -1,124 +1,235 @@
 import Foundation
 import AVFoundation
 
-// MARK: - Audio Engine
-
+// MARK: - Shape Audio Engine (SINGLETON - Dynamic Node Management)
 class ShapeAudioEngine {
+    static let shared = ShapeAudioEngine()
+
     private let engine = AVAudioEngine()
     private let mainMixer: AVAudioMixerNode
     private let reverb = AVAudioUnitReverb()
+    private let collisionPlayer = AVAudioPlayerNode()
 
-    // We will use simple buffers for now since synthesizing DSP in Swift without C++ can be tricky/heavy.
-    // However, we can create "impulse" buffers or use AVAudioUnitSampler if we had assets.
-    // For a pure code solution, we'll use AVAudioSourceNode to generate waveforms.
-
+    // Track active player nodes (created dynamically)
     private var activeNodes: [UUID: AVAudioPlayerNode] = [:]
-    private var activeBuffers: [UUID: AVAudioPCMBuffer] = [:]
 
-    init() {
+    private init() {
         mainMixer = engine.mainMixerNode
+        setupSession()
+        setupStaticGraph()
+    }
 
-        // Setup Reverb for that "Ambient" feel
-        reverb.loadFactoryPreset(.mediumHall)
-        reverb.wetDryMix = 50
-
-        engine.attach(reverb)
-        engine.connect(reverb, to: mainMixer, format: nil)
-
+    private func setupSession() {
         do {
-            try engine.start()
+            // CRITICAL: Configure session to mix with other audio
+            try AVAudioSession.sharedInstance().setCategory(.ambient, options: .mixWithOthers)
+            try AVAudioSession.sharedInstance().setActive(true)
+            print("✓ Shape Audio Session configured: .ambient with .mixWithOthers")
         } catch {
-            print("Audio Engine Error: \(error)")
+            print("❌ Shape Audio Session Failed: \(error)")
         }
     }
 
-    func playSound(for shape: SingingShape) {
-        // In a real app, we would load a nice sample.
-        // Here, we will generate a simple buffer on the fly or use a basic oscillator.
-        // For simplicity and stability in this demo, let's simulate the "idea" with a placeholder
-        // or a very simple sine wave buffer.
+    private func setupStaticGraph() {
+        // Setup reverb for ambient feel
+        reverb.loadFactoryPreset(.mediumHall)
+        reverb.wetDryMix = 40
 
-        let frequency: Double
-        switch shape.type {
-        case .circle: frequency = 440.0 // A4
-        case .triangle: frequency = 523.25 // C5
-        case .square: frequency = 329.63 // E4
-        case .hexagon: frequency = 392.00 // G4
-        case .star: frequency = 587.33 // D5
+        // Attach static nodes (reverb, collision player)
+        engine.attach(reverb)
+        engine.attach(collisionPlayer)
+
+        // Connect static graph: Reverb -> MainMixer -> Output
+        let format = AVAudioFormat(standardFormatWithSampleRate: 44100.0, channels: 2)!
+
+        engine.connect(reverb, to: mainMixer, format: format)
+        engine.connect(collisionPlayer, to: reverb, format: format)
+        engine.connect(mainMixer, to: engine.outputNode, format: format)
+
+        print("✓ Shape Audio Graph initialized: Static nodes connected")
+    }
+
+    // MARK: - Continuous Loop Management
+
+    func startLoop(for shapeID: UUID, type: ShapeType, volume: Double = 0.5) {
+        // Prevent duplicates
+        guard activeNodes[shapeID] == nil else {
+            print("⚠️ Loop already exists for shape \(shapeID)")
+            return
         }
 
-        let buffer = generateBuffer(frequency: frequency, duration: 2.0, type: shape.type)
-
+        // 1. Create new player node
         let player = AVAudioPlayerNode()
+
+        // 2. CRITICAL: Attach node to engine FIRST
         engine.attach(player)
-        // Connect to reverb
-        engine.connect(player, to: reverb, format: buffer.format)
 
+        // 3. CRITICAL: Use mixer's output format for compatibility
+        let mixerFormat = mainMixer.outputFormat(forBus: 0)
+        engine.connect(player, to: mainMixer, format: mixerFormat)
+
+        // 4. Generate buffer and schedule
+        let buffer = generateContinuousLoop(frequency: type.baseFrequency, duration: 5.0, type: type)
         player.scheduleBuffer(buffer, at: nil, options: .loops, completionHandler: nil)
+
+        // 5. Ensure engine is running BEFORE playing
+        if !engine.isRunning {
+            do {
+                try engine.start()
+                print("✓ Engine started")
+            } catch {
+                print("❌ Failed to start engine: \(error)")
+                return
+            }
+        }
+
+        // 6. CRITICAL: Verify player is connected before playing
+        guard player.engine != nil else {
+            print("❌ Player not connected to engine")
+            return
+        }
+
+        // 7. NOW safe to play
         player.play()
+        player.volume = Float(volume)
 
-        // Fade in
-        player.volume = 0
-        // Animate volume? (AVAudioPlayerNode doesn't animate volume automatically, need a timer or ramp)
-        player.volume = 0.5
+        // 8. Track this node
+        activeNodes[shapeID] = player
 
-        activeNodes[shape.id] = player
+        print("✓ Started loop for \(type.rawValue) at \(type.baseFrequency)Hz (\(activeNodes.count) active)")
     }
 
-    func stopSound(for id: UUID) {
-        if let player = activeNodes[id] {
+    func stopLoop(for shapeID: UUID, fadeDuration: TimeInterval = 0.5) {
+        guard let player = activeNodes[shapeID] else { return }
+
+        // Remove from tracking IMMEDIATELY to prevent duplicate cleanup
+        activeNodes.removeValue(forKey: shapeID)
+
+        // Fade out
+        player.volume = 0.0
+
+        // Schedule cleanup after fade
+        DispatchQueue.main.asyncAfter(deadline: .now() + fadeDuration) { [weak self] in
+            guard let self = self else { return }
+
+            // 1. Stop playback
             player.stop()
-            engine.detach(player)
-            activeNodes.removeValue(forKey: id)
+
+            // 2. CRITICAL: Only disconnect if node is still in engine
+            if player.engine != nil {
+                // Disconnect node input (safe disconnection)
+                self.engine.disconnectNodeInput(player)
+
+                // Detach from engine
+                self.engine.detach(player)
+            }
+
+            print("✓ Stopped loop (\(self.activeNodes.count) active)")
         }
     }
 
     func stopAll() {
-        for (id, _) in activeNodes {
-            stopSound(for: id)
+        let allIDs = Array(activeNodes.keys)
+        for id in allIDs {
+            stopLoop(for: id, fadeDuration: 0.2)
         }
     }
 
-    // Simple Waveform Generator
-    private func generateBuffer(frequency: Double, duration: Double, type: ShapeType) -> AVAudioPCMBuffer {
+    // MARK: - Collision Sound (Reuse single player)
+
+    func playCollisionSound(volume: Double = 0.3) {
+        guard engine.isRunning else {
+            try? engine.start()
+            return
+        }
+
+        // Generate short chime
+        let frequency = Double.random(in: 800.0...1200.0)
+        let buffer = generateCollisionChime(frequency: frequency, duration: 0.3)
+
+        // Schedule on the dedicated collision player (already connected)
+        collisionPlayer.scheduleBuffer(buffer, at: nil, options: [], completionHandler: nil)
+        collisionPlayer.volume = Float(volume)
+
+        if !collisionPlayer.isPlaying {
+            collisionPlayer.play()
+        }
+    }
+
+    // MARK: - Buffer Generators
+
+    private func generateContinuousLoop(frequency: Double, duration: Double, type: ShapeType) -> AVAudioPCMBuffer {
         let sampleRate = 44100.0
         let frameCount = AVAudioFrameCount(sampleRate * duration)
-        let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 1)!
+        let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 2)!
         let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount)!
         buffer.frameLength = frameCount
 
         let channels = buffer.floatChannelData!
-        let data = channels[0]
 
+        // Generate waveform based on shape type
         for i in 0..<Int(frameCount) {
             let t = Double(i) / sampleRate
-            var sample: Double = 0
+            let phase = 2.0 * .pi * frequency * t
 
-            // Envelope (Attack/Decay)
-            let attack = 0.1
-            let decay = duration - attack
-            let envelope: Double
-            if t < attack {
-                envelope = t / attack
-            } else {
-                envelope = 1.0 - ((t - attack) / decay)
-            }
+            var sample: Double
 
             switch type {
-            case .circle: // Sine (Bell-ish)
-                sample = sin(2.0 * .pi * frequency * t)
-            case .triangle: // Triangle wave (Chime-ish)
+            case .circle: // Pure sine (bell-like)
+                sample = sin(phase)
+
+            case .triangle: // Triangle wave (bright, chime-like)
                 let p = 2.0 * frequency * t
                 sample = 2.0 * abs(2.0 * (p - floor(p + 0.5))) - 1.0
-            case .square: // Square-ish (Pad) - actually let's use a low-passed saw or just sine with harmonics
-                sample = sin(2.0 * .pi * frequency * t) + 0.5 * sin(2.0 * .pi * frequency * 2.0 * t)
-            case .hexagon: // Pluck (dampened sine)
-                sample = sin(2.0 * .pi * frequency * t) * exp(-3.0 * t)
-            case .star: // FM-ish
-                sample = sin(2.0 * .pi * frequency * t + sin(2.0 * .pi * 5.0 * t))
+
+            case .square: // Warm pad (sine + harmonics)
+                sample = sin(phase) + 0.3 * sin(2.0 * phase) + 0.15 * sin(3.0 * phase)
+
+            case .hexagon: // Rich harmonic (organ-like)
+                sample = sin(phase) + 0.5 * sin(1.5 * phase) + 0.25 * sin(2.5 * phase)
+
+            case .star: // FM synthesis (shimmering)
+                let modulator = sin(2.0 * .pi * 5.0 * t) * 2.0
+                sample = sin(phase + modulator)
             }
 
-            data[i] = Float(sample * envelope * 0.5) // 0.5 master volume
+            // Smooth envelope for seamless looping
+            let loopEnvelope: Double
+            let fadeLength = 0.05 // 50ms crossfade
+            if t < fadeLength {
+                loopEnvelope = t / fadeLength // Fade in
+            } else if t > (duration - fadeLength) {
+                loopEnvelope = (duration - t) / fadeLength // Fade out
+            } else {
+                loopEnvelope = 1.0
+            }
+
+            let finalSample = Float(sample * loopEnvelope * 0.3) // 0.3 master volume
+            channels[0][i] = finalSample // Left
+            channels[1][i] = finalSample // Right
+        }
+
+        return buffer
+    }
+
+    private func generateCollisionChime(frequency: Double, duration: Double) -> AVAudioPCMBuffer {
+        let sampleRate = 44100.0
+        let frameCount = AVAudioFrameCount(sampleRate * duration)
+        let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 2)!
+        let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount)!
+        buffer.frameLength = frameCount
+
+        let channels = buffer.floatChannelData!
+
+        // Short, percussive chime with quick decay
+        for i in 0..<Int(frameCount) {
+            let t = Double(i) / sampleRate
+            let envelope = exp(-8.0 * t) // Fast exponential decay
+            let sample = sin(2.0 * .pi * frequency * t) * envelope
+
+            let finalSample = Float(sample * 0.4)
+            channels[0][i] = finalSample // Left
+            channels[1][i] = finalSample // Right
         }
 
         return buffer

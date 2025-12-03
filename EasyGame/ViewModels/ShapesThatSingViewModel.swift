@@ -4,108 +4,90 @@ import SwiftUI
 import CoreGraphics
 
 // MARK: - ViewModel
-
 class ShapesThatSingViewModel: ObservableObject {
+    // MARK: - Published Properties
     @Published var shapes: [SingingShape] = []
     @Published var showMenu: Bool = false
     @Published var menuPosition: CGPoint = .zero
+    @Published var isCollisionSoundEnabled: Bool = true
+    @Published var showSettings: Bool = false
+    @Published var volume: Double = 0.5 // Range: 0.0 - 1.0
 
-    private let audio = ShapeAudioEngine()
-    private var timer: Timer?
-    private var screenSize: CGSize = .zero
+    // Reference to scene (set by View)
+    weak var scene: SingingShapeScene?
 
-    func start(screenSize: CGSize) {
-        self.screenSize = screenSize
+    // MARK: - Lifecycle
+    init() {
+        // Minimal init - prepare audio lazily
+    }
 
-        // Start Loop
-        timer = Timer.scheduledTimer(withTimeInterval: 1.0/60.0, repeats: true) { [weak self] _ in
-            self?.update()
+    func prepareAudio() {
+        // Access singleton to ensure it's initialized
+        _ = ShapeAudioEngine.shared
+    }
+
+    func cleanup() {
+        ShapeAudioEngine.shared.stopAll()
+        shapes.removeAll()
+    }
+
+    // MARK: - Touch Handling (called by Scene)
+    func handleTapOnEmptySpace(at location: CGPoint) {
+        menuPosition = location
+        showMenu = true
+    }
+
+    func handleShapeRemoved(id: UUID) {
+        // Stop audio loop for this shape
+        ShapeAudioEngine.shared.stopLoop(for: id)
+
+        // Remove from our tracking
+        shapes.removeAll { $0.id == id }
+    }
+
+    func handleCollision() {
+        // Play collision sound if enabled
+        if isCollisionSoundEnabled {
+            ShapeAudioEngine.shared.playCollisionSound(volume: volume)
         }
     }
 
-    func stop() {
-        timer?.invalidate()
-        timer = nil
-        audio.stopAll()
-    }
-
-    func handleTap(at location: CGPoint) {
-        // Check if tapped existing shape
-        if let index = shapes.firstIndex(where: { distance($0.position, location) < 50 }) {
-            // Remove shape
-            let shape = shapes[index]
-            audio.stopSound(for: shape.id)
-            shapes.remove(at: index)
-        } else {
-            // Open menu
-            menuPosition = location
-            showMenu = true
-        }
-    }
-
+    // MARK: - Shape Management
     func addShape(_ type: ShapeType) {
+        // Create shape model
         let shape = SingingShape(
             type: type,
-            position: menuPosition,
-            driftVelocity: CGPoint(
-                x: CGFloat.random(in: -0.5...0.5),
-                y: CGFloat.random(in: -0.5...0.5)
-            )
+            position: menuPosition
         )
         shapes.append(shape)
 
-        // Start Sound
-        audio.playSound(for: shape)
+        // Add to scene
+        scene?.addShape(id: shape.id, type: type, position: menuPosition)
 
-        // Animate in
-        withAnimation(.spring()) {
-            if let index = shapes.firstIndex(where: { $0.id == shape.id }) {
-                shapes[index].scale = 1.0
-            }
-        }
+        // Start audio loop
+        ShapeAudioEngine.shared.startLoop(for: shape.id, type: type, volume: volume)
 
+        // Close menu
         showMenu = false
     }
 
+    func removeShape(id: UUID) {
+        // Notify scene to animate removal
+        scene?.removeShape(id: id)
+
+        // Audio cleanup happens in handleShapeRemoved callback
+    }
+
     func clearAll() {
-        audio.stopAll()
-        withAnimation {
-            shapes.removeAll()
-        }
-    }
+        // Remove all shapes from scene
+        scene?.removeAllShapes()
 
-    private func update() {
-        for i in 0..<shapes.count {
-            // Drift
-            shapes[i].position.x += shapes[i].driftVelocity.x
-            shapes[i].position.y += shapes[i].driftVelocity.y
+        // Stop all audio
+        ShapeAudioEngine.shared.stopAll()
 
-            // Rotate
-            shapes[i].rotation += 0.2
+        // Clear our tracking
+        shapes.removeAll()
 
-            // Pulse Brightness (Visualizing the loop)
-            let time = Date().timeIntervalSince1970
-            let loopDuration = shapes[i].type.loopDuration
-            let progress = (time.truncatingRemainder(dividingBy: loopDuration)) / loopDuration
-
-            // Pulse on the "beat" (start of loop)
-            if progress < 0.1 {
-                shapes[i].brightness = 1.0 - (progress * 5.0) // Flash
-            } else {
-                shapes[i].brightness = 0.5 + sin(time) * 0.1 // Gentle breathe
-            }
-
-            // Bounce off walls
-            if shapes[i].position.x < 0 || shapes[i].position.x > screenSize.width {
-                shapes[i].driftVelocity.x *= -1
-            }
-            if shapes[i].position.y < 0 || shapes[i].position.y > screenSize.height {
-                shapes[i].driftVelocity.y *= -1
-            }
-        }
-    }
-
-    private func distance(_ a: CGPoint, _ b: CGPoint) -> CGFloat {
-        return hypot(a.x - b.x, a.y - b.y)
+        print("✓ Cleared all shapes")
     }
 }

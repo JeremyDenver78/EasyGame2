@@ -1,9 +1,8 @@
 import Foundation
 import SwiftUI
-import CoreGraphics
+import SpriteKit
 
-// MARK: - Models
-
+// MARK: - Shape Type
 enum ShapeType: String, CaseIterable, Identifiable {
     case circle
     case triangle
@@ -14,13 +13,7 @@ enum ShapeType: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 
     var name: String {
-        switch self {
-        case .circle: return "Circle"
-        case .triangle: return "Triangle"
-        case .square: return "Square"
-        case .hexagon: return "Hexagon"
-        case .star: return "Star"
-        }
+        rawValue.capitalized
     }
 
     var iconName: String {
@@ -33,36 +26,61 @@ enum ShapeType: String, CaseIterable, Identifiable {
         }
     }
 
-    var color: Color {
+    // Base frequency for continuous loop sound
+    var baseFrequency: Double {
         switch self {
-        case .circle: return Color(red: 0.6, green: 0.8, blue: 1.0) // Soft Blue
-        case .triangle: return Color(red: 1.0, green: 0.9, blue: 0.6) // Soft Yellow
-        case .square: return Color(red: 0.8, green: 0.6, blue: 1.0) // Soft Purple
-        case .hexagon: return Color(red: 0.6, green: 1.0, blue: 0.8) // Soft Teal
-        case .star: return Color(red: 1.0, green: 0.7, blue: 0.7) // Soft Pink
+        case .circle: return 261.63   // C4
+        case .triangle: return 329.63 // E4
+        case .square: return 392.00   // G4
+        case .hexagon: return 523.25  // C5
+        case .star: return 659.25     // E5
         }
     }
 
-    var loopDuration: TimeInterval {
+    var color: Color {
         switch self {
-        case .circle: return 8.0
-        case .triangle: return 4.0
-        case .square: return 12.0
-        case .hexagon: return 6.0
-        case .star: return 10.0
+        case .circle: return Color(red: 0.4, green: 0.8, blue: 1.0) // Cyan
+        case .triangle: return Color(red: 1.0, green: 0.6, blue: 0.8) // Pink
+        case .square: return Color(red: 0.5, green: 1.0, blue: 0.5) // Green
+        case .hexagon: return Color(red: 1.0, green: 0.8, blue: 0.4) // Orange
+        case .star: return Color(red: 0.8, green: 0.5, blue: 1.0) // Purple
         }
+    }
+
+    var uiColor: UIColor {
+        switch self {
+        case .circle: return UIColor(red: 0.4, green: 0.8, blue: 1.0, alpha: 1.0)
+        case .triangle: return UIColor(red: 1.0, green: 0.6, blue: 0.8, alpha: 1.0)
+        case .square: return UIColor(red: 0.5, green: 1.0, blue: 0.5, alpha: 1.0)
+        case .hexagon: return UIColor(red: 1.0, green: 0.8, blue: 0.4, alpha: 1.0)
+        case .star: return UIColor(red: 0.8, green: 0.5, blue: 1.0, alpha: 1.0)
+        }
+    }
+
+    // Physics properties
+    var mass: CGFloat {
+        switch self {
+        case .circle: return 1.0
+        case .triangle: return 0.8
+        case .square: return 1.2
+        case .hexagon: return 1.0
+        case .star: return 0.9
+        }
+    }
+
+    var size: CGFloat {
+        return 60.0 // Base size for all shapes
     }
 }
 
+// MARK: - Singing Shape (SpriteKit-based)
 struct SingingShape: Identifiable {
     let id = UUID()
     let type: ShapeType
     var position: CGPoint
-    var scale: CGFloat = 0.0
-    var rotation: Double = 0.0
-    var brightness: Double = 0.5
-    var isPlaying: Bool = false
 
-    // Physics
-    var driftVelocity: CGPoint
+    init(type: ShapeType, position: CGPoint) {
+        self.type = type
+        self.position = position
+    }
 }

@@ -7,7 +7,7 @@ class HomeViewModel: ObservableObject {
         Game(type: .sandfall, isComingSoon: false),
         Game(type: .shapesThatSing, isComingSoon: false),
         Game(type: .magicalSwirl, isComingSoon: false),
-        Game(type: .game4, isComingSoon: true),
+        Game(type: .harmonicBloom, isComingSoon: false),
         Game(type: .game5, isComingSoon: true)
     ]
 }

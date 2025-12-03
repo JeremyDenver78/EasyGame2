@@ -7,9 +7,9 @@ enum GameType: String, CaseIterable, Identifiable {
     case sandfall
     case shapesThatSing
     case magicalSwirl
-    case game4
+    case harmonicBloom
     case game5
-    
+
     var id: String { self.rawValue }
     
     var title: String {
@@ -22,8 +22,8 @@ enum GameType: String, CaseIterable, Identifiable {
         case .shapesThatSing:
             return "Shapes That Sing"
         case .magicalSwirl: return "Magical Swirl"
-        case .game4: return "Game 4"
-        case .game5: return "Game 5"
+        case .harmonicBloom: return "Harmonic Bloom"
+        case .game5: return "Coming Soon"
         }
     }
     
@@ -37,7 +37,7 @@ enum GameType: String, CaseIterable, Identifiable {
         case .shapesThatSing:
             return "Create a soothing ambient soundscape with floating shapes."
         case .magicalSwirl: return "Create soothing trails of light with your touch."
-        case .game4: return "Coming Soon"
+        case .harmonicBloom: return "Watch your environment bloom into light as you listen or speak."
         case .game5: return "Coming Soon"
         }
     }
@@ -52,7 +52,7 @@ enum GameType: String, CaseIterable, Identifiable {
         case .shapesThatSing:
             return "music.quarternote.3"
         case .magicalSwirl: return "sparkles"
-        case .game4: return "music.note"
+        case .harmonicBloom: return "waveform.circle"
         case .game5: return "star"
         }
     }
@@ -64,7 +64,7 @@ enum GameType: String, CaseIterable, Identifiable {
         case .sandfall: return [Color.dreamyPeach, Color(red: 1.0, green: 0.80, blue: 0.70)]
         case .shapesThatSing: return [Color.dreamyPurple.opacity(0.6), Color.dreamyPurple]
         case .magicalSwirl: return [Color(red: 0.4, green: 0.2, blue: 0.6), Color(red: 0.6, green: 0.4, blue: 0.8)]
-        case .game4: return [Color.dreamyMint.opacity(0.6), Color.dreamyMint]
+        case .harmonicBloom: return [Color(red: 0.2, green: 0.8, blue: 0.9), Color(red: 0.1, green: 0.4, blue: 0.8)]
         case .game5: return [Color.gray, Color.gray.opacity(0.5)]
         }
     }
@@ -82,6 +82,8 @@ enum GameType: String, CaseIterable, Identifiable {
             ShapesThatSingView()
         case .magicalSwirl:
             MagicalSwirlView()
+        case .harmonicBloom:
+            HarmonicBloomView()
         default:
             Text("Coming Soon")
         }

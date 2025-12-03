@@ -28,12 +28,16 @@
 		AA0060 /* ShapesThatSingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0061 /* ShapesThatSingView.swift */; };
 		AA0062 /* MagicalSwirlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0063 /* MagicalSwirlView.swift */; };
 		AA0064 /* MagicalSwirlScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0065 /* MagicalSwirlScene.swift */; };
+		AA0082 /* SingingShapeScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0083 /* SingingShapeScene.swift */; };
 		AA0066 /* BubblePathViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0067 /* BubblePathViewModel.swift */; };
 		AA0068 /* SandfallViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0069 /* SandfallViewModel.swift */; };
 		AA0070 /* ShapesThatSingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0071 /* ShapesThatSingViewModel.swift */; };
 		AA0072 /* MagicalSwirlViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0073 /* MagicalSwirlViewModel.swift */; };
 		AA0074 /* SingingShapeModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0075 /* SingingShapeModel.swift */; };
 		AA0076 /* ShapeAudioEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0077 /* ShapeAudioEngine.swift */; };
+		AA0084 /* HarmonicBloomViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0086 /* HarmonicBloomViewModel.swift */; };
+		AA0085 /* HarmonicBloomView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0087 /* HarmonicBloomView.swift */; };
+		AA0BF6 /* www in Resources */ = {isa = PBXBuildFile; fileRef = AA2B07 /* www */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -59,12 +63,16 @@
 		AA0061 /* ShapesThatSingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShapesThatSingView.swift; sourceTree = "<group>"; };
 		AA0063 /* MagicalSwirlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MagicalSwirlView.swift; sourceTree = "<group>"; };
 		AA0065 /* MagicalSwirlScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MagicalSwirlScene.swift; sourceTree = "<group>"; };
+		AA0083 /* SingingShapeScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SingingShapeScene.swift; sourceTree = "<group>"; };
 		AA0067 /* BubblePathViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BubblePathViewModel.swift; sourceTree = "<group>"; };
 		AA0069 /* SandfallViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SandfallViewModel.swift; sourceTree = "<group>"; };
 		AA0071 /* ShapesThatSingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShapesThatSingViewModel.swift; sourceTree = "<group>"; };
 		AA0073 /* MagicalSwirlViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MagicalSwirlViewModel.swift; sourceTree = "<group>"; };
 		AA0075 /* SingingShapeModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SingingShapeModel.swift; sourceTree = "<group>"; };
 		AA0077 /* ShapeAudioEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShapeAudioEngine.swift; sourceTree = "<group>"; };
+		AA0086 /* HarmonicBloomViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HarmonicBloomViewModel.swift; sourceTree = "<group>"; };
+		AA0087 /* HarmonicBloomView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HarmonicBloomView.swift; sourceTree = "<group>"; };
+		AA2B07 /* www */ = {isa = PBXFileReference; lastKnownFileType = folder; path = www; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -136,8 +144,10 @@
 				AA0057 /* BubblePathGameView.swift */,
 				AA0059 /* SandfallGameView.swift */,
 				AA0061 /* ShapesThatSingView.swift */,
+				AA0083 /* SingingShapeScene.swift */,
 				AA0063 /* MagicalSwirlView.swift */,
 				AA0065 /* MagicalSwirlScene.swift */,
+				AA0087 /* HarmonicBloomView.swift */,
 			);
 			path = Games;
 			sourceTree = "<group>";
@@ -151,6 +161,7 @@
 				AA0069 /* SandfallViewModel.swift */,
 				AA0071 /* ShapesThatSingViewModel.swift */,
 				AA0073 /* MagicalSwirlViewModel.swift */,
+				AA0086 /* HarmonicBloomViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -243,7 +254,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				AA0019 /* Assets.xcassets in Resources */,
-			);
+			
+				AA0BF6 /* www in Resources */,);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
@@ -273,12 +285,15 @@
 				AA0060 /* ShapesThatSingView.swift in Sources */,
 				AA0062 /* MagicalSwirlView.swift in Sources */,
 				AA0064 /* MagicalSwirlScene.swift in Sources */,
+				AA0082 /* SingingShapeScene.swift in Sources */,
 				AA0066 /* BubblePathViewModel.swift in Sources */,
 				AA0068 /* SandfallViewModel.swift in Sources */,
 				AA0070 /* ShapesThatSingViewModel.swift in Sources */,
 				AA0072 /* MagicalSwirlViewModel.swift in Sources */,
 				AA0074 /* SingingShapeModel.swift in Sources */,
 				AA0076 /* ShapeAudioEngine.swift in Sources */,
+				AA0084 /* HarmonicBloomViewModel.swift in Sources */,
+				AA0085 /* HarmonicBloomView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -414,6 +429,7 @@
 				DEVELOPMENT_TEAM = 29936W84HX;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Harmonic Bloom needs your microphone to transform sound into visual art.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -443,6 +459,7 @@
 				DEVELOPMENT_TEAM = 29936W84HX;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Harmonic Bloom needs your microphone to transform sound into visual art.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

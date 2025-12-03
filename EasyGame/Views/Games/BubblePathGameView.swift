@@ -27,7 +27,30 @@ struct BubblePathGameView: View {
                     PathSegmentView(segment: segment, screenWidth: geometry.size.width)
                 }
 
-                // Bubble
+                // Trail (rendered before bubble for layering)
+                ForEach(Array(viewModel.trailPositions.enumerated()), id: \.offset) { index, position in
+                    let progress = Double(index) / Double(max(1, viewModel.trailPositions.count - 1))
+                    let trailRadius = 15.0 * (0.3 + progress * 0.7) // Smaller at back, larger near bubble
+                    let trailOpacity = 0.3 * progress // Fainter at back
+
+                    Circle()
+                        .fill(
+                            RadialGradient(
+                                gradient: Gradient(colors: [
+                                    viewModel.bubble.color.opacity(trailOpacity),
+                                    viewModel.bubble.color.opacity(trailOpacity * 0.5),
+                                    Color.clear
+                                ]),
+                                center: .center,
+                                startRadius: 0,
+                                endRadius: trailRadius
+                            )
+                        )
+                        .frame(width: trailRadius * 2, height: trailRadius * 2)
+                        .position(position)
+                }
+
+                // Bubble (with dynamic color)
                 BubbleView(bubble: viewModel.bubble, radius: 25)
 
                 // Score display
@@ -57,6 +80,28 @@ struct BubblePathGameView: View {
                                 scoreColor = .white.opacity(0.7)
                             }
                         }
+                    }
+                }
+
+                // Control indicators (subtle visual hints)
+                VStack {
+                    Spacer()
+                    HStack {
+                        // Left control indicator
+                        Circle()
+                            .fill(Color.white.opacity(0.15))
+                            .frame(width: 60, height: 60)
+                            .padding(.leading, 40)
+                            .padding(.bottom, 40)
+
+                        Spacer()
+
+                        // Right control indicator
+                        Circle()
+                            .fill(Color.white.opacity(0.15))
+                            .frame(width: 60, height: 60)
+                            .padding(.trailing, 40)
+                            .padding(.bottom, 40)
                     }
                 }
 
@@ -92,9 +137,15 @@ struct BubblePathGameView: View {
             .onAppear {
                 self.screenSize = geometry.size
                 viewModel.startGame(screenSize: geometry.size)
+
+                // Start ambient audio
+                BubbleGameAudioEngine.shared.startAmbientDrone()
             }
             .onDisappear {
                 viewModel.stopGame()
+
+                // Stop ambient audio
+                BubbleGameAudioEngine.shared.stopAmbientDrone()
             }
         }
         .navigationBarTitleDisplayMode(.inline)
@@ -109,7 +160,6 @@ struct PathSegmentView: View {
 
     var body: some View {
         let centerX = segment.centerX * screenWidth
-        // let pathLeft = centerX - segment.width / 2
 
         RoundedRectangle(cornerRadius: 20)
             .fill(Color.white.opacity(0.15))
@@ -132,8 +182,8 @@ struct BubbleView: View {
 
     var body: some View {
         let isHit = bubble.glowLevel > 1.2
-        let mainColor = isHit ? Color(red: 1.0, green: 0.8, blue: 0.2) : Color.cyan // Warm Gold
-        let coreColor = isHit ? Color.white : Color.white
+        let mainColor = isHit ? Color(red: 1.0, green: 0.8, blue: 0.2) : bubble.color
+        let coreColor = Color.white
 
         return ZStack {
             // Outer glow
@@ -159,7 +209,7 @@ struct BubbleView: View {
                         gradient: Gradient(colors: [
                             coreColor.opacity(0.8 * bubble.glowLevel),
                             mainColor.opacity(0.6 * bubble.glowLevel),
-                            Color.blue.opacity(0.4 * bubble.glowLevel)
+                            mainColor.opacity(0.4 * bubble.glowLevel)
                         ]),
                         center: UnitPoint(x: 0.3, y: 0.3),
                         startRadius: 0,

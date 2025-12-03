@@ -65,7 +65,7 @@ struct HarmonicBloomView: View {
                 Spacer()
 
                 if viewModel.hasMicrophoneAccess {
-                    Text("Play music or speak to visualize")
+                    Text("Speak or make sounds to visualize")
                         .font(.caption)
                         .foregroundColor(.white.opacity(0.5))
                         .padding(.bottom, 20)

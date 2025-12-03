@@ -39,6 +39,7 @@
 		AA0085 /* HarmonicBloomView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0087 /* HarmonicBloomView.swift */; };
 		AAB9D0 /* AudioSpectrumProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA8F65 /* AudioSpectrumProcessor.swift */; };
 		AADFB1 /* HarmonicBloomScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA143C /* HarmonicBloomScene.swift */; };
+		AA9335 /* BubbleGameAudioEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA8DE8 /* BubbleGameAudioEngine.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -75,6 +76,7 @@
 		AA0087 /* HarmonicBloomView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HarmonicBloomView.swift; sourceTree = "<group>"; };
 		AA8F65 /* AudioSpectrumProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioSpectrumProcessor.swift; sourceTree = "<group>"; };
 		AA143C /* HarmonicBloomScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HarmonicBloomScene.swift; sourceTree = "<group>"; };
+		AA8DE8 /* BubbleGameAudioEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BubbleGameAudioEngine.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -195,7 +197,8 @@
 			children = (
 				AA0077 /* ShapeAudioEngine.swift */,
 				AA8F65 /* AudioSpectrumProcessor.swift */,
-			);
+			
+				AA8DE8 /* BubbleGameAudioEngine.swift */,);
 			path = Audio;
 			sourceTree = "<group>";
 		};
@@ -297,7 +300,8 @@
 				AA0084 /* HarmonicBloomViewModel.swift in Sources */,
 				AA0085 /* HarmonicBloomView.swift in Sources */,				AAA0F7 /* HarmonicBloomScene.swift in Sources */,
 				AAB9D0 /* AudioSpectrumProcessor.swift in Sources */,
-				AADFB1 /* HarmonicBloomScene.swift in Sources */,);
+				AADFB1 /* HarmonicBloomScene.swift in Sources */,
+				AA9335 /* BubbleGameAudioEngine.swift in Sources */,);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */

@@ -135,6 +135,13 @@ class ShapeAudioEngine {
         }
     }
 
+    func updateVolume(_ volume: Double) {
+        // Update volume for all active players
+        for (_, player) in activeNodes {
+            player.volume = Float(volume)
+        }
+    }
+
     // MARK: - Collision Sound (Reuse single player)
 
     func playCollisionSound(volume: Double = 0.3) {
@@ -178,9 +185,39 @@ class ShapeAudioEngine {
             case .circle: // Pure sine (bell-like)
                 sample = sin(phase)
 
-            case .triangle: // Triangle wave (bright, chime-like)
-                let p = 2.0 * frequency * t
-                sample = 2.0 * abs(2.0 * (p - floor(p + 0.5))) - 1.0
+            case .triangle: // Soft sine with ADSR envelope
+                // Use sine wave as base
+                sample = sin(phase)
+
+                // Apply ADSR envelope (adapted from sound module)
+                // Parameters: attack=0.45s, decay=0.79s, sustain=0.24, release=0.32s
+                let attackTime = 0.45
+                let decayTime = 0.79
+                let sustainLevel = 0.24
+                let releaseTime = 0.32
+
+                // Calculate time within the loop cycle
+                let cycleTime = t.truncatingRemainder(dividingBy: duration)
+
+                var adsrEnv = 0.0
+                if cycleTime < attackTime {
+                    // Attack phase: ramp up from 0 to 1
+                    adsrEnv = cycleTime / attackTime
+                } else if cycleTime < (attackTime + decayTime) {
+                    // Decay phase: fall from 1 to sustainLevel
+                    let decayProgress = (cycleTime - attackTime) / decayTime
+                    adsrEnv = 1.0 + (sustainLevel - 1.0) * decayProgress
+                } else {
+                    // Sustain phase: hold at sustainLevel
+                    let sustainTime = cycleTime - attackTime - decayTime
+                    adsrEnv = sustainLevel * exp(-sustainTime / releaseTime)
+                }
+
+                // Clamp envelope
+                adsrEnv = max(0.0, min(1.0, adsrEnv))
+
+                // Apply envelope to sample
+                sample = sample * adsrEnv
 
             case .square: // Warm pad (sine + harmonics)
                 sample = sin(phase) + 0.3 * sin(2.0 * phase) + 0.15 * sin(3.0 * phase)
@@ -193,15 +230,20 @@ class ShapeAudioEngine {
                 sample = sin(phase + modulator)
             }
 
-            // Smooth envelope for seamless looping
+            // Smooth envelope for seamless looping (except triangle which has its own envelope)
             let loopEnvelope: Double
-            let fadeLength = 0.05 // 50ms crossfade
-            if t < fadeLength {
-                loopEnvelope = t / fadeLength // Fade in
-            } else if t > (duration - fadeLength) {
-                loopEnvelope = (duration - t) / fadeLength // Fade out
-            } else {
+            if type == .triangle {
+                // Triangle uses ADSR, no additional crossfade needed
                 loopEnvelope = 1.0
+            } else {
+                let fadeLength = 0.05 // 50ms crossfade
+                if t < fadeLength {
+                    loopEnvelope = t / fadeLength // Fade in
+                } else if t > (duration - fadeLength) {
+                    loopEnvelope = (duration - t) / fadeLength // Fade out
+                } else {
+                    loopEnvelope = 1.0
+                }
             }
 
             let finalSample = Float(sample * loopEnvelope * 0.3) // 0.3 master volume

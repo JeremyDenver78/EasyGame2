@@ -11,7 +11,12 @@ class ShapesThatSingViewModel: ObservableObject {
     @Published var menuPosition: CGPoint = .zero
     @Published var isCollisionSoundEnabled: Bool = true
     @Published var showSettings: Bool = false
-    @Published var volume: Double = 0.5 // Range: 0.0 - 1.0
+    @Published var volume: Double = 0.5 {
+        didSet {
+            // Update volume for all active players when slider changes
+            ShapeAudioEngine.shared.updateVolume(volume)
+        }
+    }
 
     // Reference to scene (set by View)
     weak var scene: SingingShapeScene?

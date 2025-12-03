@@ -1,19 +1,21 @@
 import Foundation
 import Combine
 import CoreGraphics
+import SwiftUI
 
 // MARK: - Bubble Path Model
 struct PathSegment: Identifiable {
     let id = UUID()
-    var centerX: CGFloat // X position of center line (0-1, where 0.5 is middle)
-    var width: CGFloat // Width of safe path
-    var yPosition: CGFloat // Y position on screen
+    var centerX: CGFloat
+    var width: CGFloat
+    var yPosition: CGFloat
 }
 
 struct BubbleState {
     var position: CGPoint
     var velocity: CGPoint
-    var glowLevel: Double // 0.0 to 1.0
+    var glowLevel: Double
+    var color: Color = .cyan
 }
 
 // MARK: - Bubble Path ViewModel
@@ -22,19 +24,22 @@ class BubblePathViewModel: ObservableObject {
     @Published var bubble: BubbleState
     @Published var pathSegments: [PathSegment] = []
     @Published var score: Int = 0
+    @Published var trailPositions: [CGPoint] = []
 
     // MARK: - Game State
     private var gameTimer: Timer?
     private var screenSize: CGSize = .zero
-    private let pathWidth: CGFloat = 125 // Width of safe path (increased for bigger bubble)
-    private let bubbleRadius: CGFloat = 31.25 // Increased by 25%
-    private let scrollSpeed: CGFloat = 2.0 // Points per frame
-    private let driftSpeed: CGFloat = 4.0 // Horizontal drift speed
+    private let minPathWidth: CGFloat = 125
+    private let maxPathWidth: CGFloat = 180
+    private let bubbleRadius: CGFloat = 31.25
+    private let scrollSpeed: CGFloat = 2.0
+    private let driftSpeed: CGFloat = 4.0
     private var isCollisionPaused: Bool = false
+
+    private let maxTrailLength = 15
 
     // MARK: - Initialization
     init() {
-        // Start bubble in center
         self.bubble = BubbleState(
             position: CGPoint(x: 0, y: 0),
             velocity: CGPoint.zero,
@@ -46,15 +51,13 @@ class BubblePathViewModel: ObservableObject {
     func startGame(screenSize: CGSize) {
         self.screenSize = screenSize
 
-        // Reset bubble to center
         bubble.position = CGPoint(x: screenSize.width / 2, y: screenSize.height * 0.7)
         bubble.velocity = .zero
         bubble.glowLevel = 1.0
+        score = 0
+        trailPositions.removeAll()
 
-        // Generate initial path segments
         generateInitialPath()
-
-        // Start game loop
         startGameLoop()
     }
 
@@ -84,14 +87,13 @@ class BubblePathViewModel: ObservableObject {
     }
 
     private func updateGame() {
-        // Restore glow to normal (1.0) - Always run this so flash fades during pause
+        // Restore glow to normal
         if bubble.glowLevel < 1.0 {
             bubble.glowLevel = min(1.0, bubble.glowLevel + 0.01)
         } else if bubble.glowLevel > 1.0 {
-            bubble.glowLevel = max(1.0, bubble.glowLevel - 0.02) // Very slow, soft decay
+            bubble.glowLevel = max(1.0, bubble.glowLevel - 0.02)
         }
 
-        // Pause game logic if collision occurred
         guard !isCollisionPaused else { return }
 
         // Move bubble based on velocity
@@ -100,18 +102,23 @@ class BubblePathViewModel: ObservableObject {
         // Apply gentle drag to horizontal movement
         bubble.velocity.x *= 0.95
 
-        // Keep bubble on screen (soft boundaries)
+        // Keep bubble on screen
         let minX = bubbleRadius
         let maxX = screenSize.width - bubbleRadius
         bubble.position.x = max(minX, min(maxX, bubble.position.x))
 
-        // Scroll path downward
+        // Update trail: add current position, keep last 15
+        trailPositions.append(bubble.position)
+        if trailPositions.count > maxTrailLength {
+            trailPositions.removeFirst()
+        }
+
+        // Update bubble color based on score (hue cycle every 500 points)
+        let hueProgress = (Double(score) / 500.0).truncatingRemainder(dividingBy: 1.0)
+        bubble.color = Color(hue: hueProgress, saturation: 0.8, brightness: 0.9)
+
         scrollPath()
-
-        // Check collision with path edges
         checkCollision()
-
-        // Increment score (simple distance traveled)
         score += 1
     }
 
@@ -123,22 +130,28 @@ class BubblePathViewModel: ObservableObject {
         var yPos: CGFloat = -segmentHeight
         var centerX: CGFloat = 0.5
 
-        // Generate enough segments to fill screen + buffer
         let numSegments = Int(screenSize.height / segmentHeight) + 5
 
         for i in 0..<numSegments {
+            // Alternate between narrow and wider paths for visual variety
+            let width: CGFloat
+            if i % 2 == 0 {
+                width = minPathWidth
+            } else {
+                width = CGFloat.random(in: minPathWidth...maxPathWidth)
+            }
+
             pathSegments.append(PathSegment(
                 centerX: centerX,
-                width: pathWidth,
+                width: width,
                 yPosition: yPos
             ))
 
             yPos += segmentHeight
 
-            // Keep path straight for the first 5 segments (bottom of screen), then random walk
             if i > 5 {
                 centerX += CGFloat.random(in: -0.1...0.1)
-                centerX = max(0.2, min(0.8, centerX)) // Keep path mostly on screen
+                centerX = max(0.2, min(0.8, centerX))
             }
         }
     }
@@ -158,9 +171,17 @@ class BubblePathViewModel: ObservableObject {
             var newCenterX = firstSegment.centerX + CGFloat.random(in: -0.1...0.1)
             newCenterX = max(0.2, min(0.8, newCenterX))
 
+            // Vary width: alternate between narrow and wider paths
+            let width: CGFloat
+            if pathSegments.count % 2 == 0 {
+                width = minPathWidth
+            } else {
+                width = CGFloat.random(in: minPathWidth...maxPathWidth)
+            }
+
             pathSegments.insert(PathSegment(
                 centerX: newCenterX,
-                width: pathWidth,
+                width: width,
                 yPosition: firstSegment.yPosition - segmentHeight
             ), at: 0)
         }
@@ -168,44 +189,48 @@ class BubblePathViewModel: ObservableObject {
 
     // MARK: - Collision Detection
     private func checkCollision() {
-        // Find segment at bubble's Y position
         guard let currentSegment = pathSegments.first(where: { segment in
             abs(segment.yPosition - bubble.position.y) < 40
         }) else {
             return
         }
 
-        // Calculate path bounds
         let pathCenterX = currentSegment.centerX * screenSize.width
         let pathLeft = pathCenterX - currentSegment.width / 2
         let pathRight = pathCenterX + currentSegment.width / 2
 
-        // Check if bubble is outside path
         let bubbleLeft = bubble.position.x - bubbleRadius
         let bubbleRight = bubble.position.x + bubbleRadius
 
         if bubbleLeft < pathLeft || bubbleRight > pathRight {
-            // Soft Collision Response
-            // 1. Visuals: Warm Gold Flash (not too bright)
-            bubble.glowLevel = 1.5
+            handleCollision(pathLeft: pathLeft, pathRight: pathRight)
+        }
+    }
 
-            // 2. Penalty: Reset score
-            score = 0
+    private func handleCollision(pathLeft: CGFloat, pathRight: CGFloat) {
+        // Play soft collision sound
+        BubbleGameAudioEngine.shared.playCollisionSound()
 
-            // 3. Physics: Stop violent movement, just pause
-            bubble.velocity = .zero
-            // Clamp position to edge so it doesn't look like it's inside the wall
-            if bubbleLeft < pathLeft {
-                bubble.position.x = pathLeft + bubbleRadius
-            } else {
-                bubble.position.x = pathRight - bubbleRadius
-            }
+        // Visual feedback: gentle warm flash
+        bubble.glowLevel = 1.5
 
-            // 4. Pacing: Pause for a moment to let player regroup
-            isCollisionPaused = true
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
-                self?.isCollisionPaused = false
-            }
+        // Reset score
+        score = 0
+
+        // Stop movement
+        bubble.velocity = .zero
+
+        // Clamp position to edge
+        if bubble.position.x - bubbleRadius < pathLeft {
+            bubble.position.x = pathLeft + bubbleRadius
+        } else {
+            bubble.position.x = pathRight - bubbleRadius
+        }
+
+        // Brief pause
+        isCollisionPaused = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+            self?.isCollisionPaused = false
         }
     }
 }

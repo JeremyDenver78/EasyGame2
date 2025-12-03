@@ -30,10 +30,10 @@ enum ShapeType: String, CaseIterable, Identifiable {
     var baseFrequency: Double {
         switch self {
         case .circle: return 261.63   // C4
-        case .triangle: return 329.63 // E4
-        case .square: return 392.00   // G4
+        case .triangle: return 303.00 // D#4 - matches sound module with ADSR envelope
+        case .square: return 261.63   // C4 - softer, more peaceful
         case .hexagon: return 523.25  // C5
-        case .star: return 659.25     // E5
+        case .star: return 440.00     // A4 - less high-pitched
         }
     }
 

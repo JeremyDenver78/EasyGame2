@@ -2,26 +2,25 @@ import SpriteKit
 import SwiftUI
 
 class HarmonicBloomScene: SKScene {
-    // MARK: - Properties
     weak var viewModel: HarmonicBloomViewModel?
 
-    // Track active particles
     private var particles: [BloomNode] = []
-
-    // Audio tracking
     private var lastAmplitude: Float = 0.0
-    private let sensitivity: Float = 3.5 // Multiplier to make it react easier
+    private var textureCache: SKTexture?
 
-    // MARK: - Lifecycle
+    // Config
+    private let sensitivity: Float = 4.0
+    private let splatThreshold: Float = 0.05 // Very sensitive to clicks
+
     override func didMove(to view: SKView) {
         self.backgroundColor = .black
         self.scaleMode = .resizeFill
         view.allowsTransparency = false
 
-        // No initial spawn - Start Empty
+        // Generate the "soft paint" texture once
+        self.textureCache = createSoftTexture()
     }
 
-    // MARK: - Game Loop
     override func update(_ currentTime: TimeInterval) {
         guard let viewModel = viewModel else { return }
 
@@ -29,24 +28,23 @@ class HarmonicBloomScene: SKScene {
         let currentAmp = rawAmp * sensitivity
         let frequencies = viewModel.frequencyData
 
-        // 1. Detect Audio Events
         let delta = currentAmp - lastAmplitude
 
-        // A. DETECT "SPLAT" (Sharp rise in volume - Clap/Drum)
-        if delta > 0.15 {
-            // Spawn a burst at a random location
+        // 1. SPLAT (Clicks/Snaps)
+        // Lower threshold to catch finger snaps
+        if delta > splatThreshold {
             let x = CGFloat.random(in: 50...(size.width - 50))
             let y = CGFloat.random(in: 50...(size.height - 50))
             let color = getColor(from: frequencies)
 
+            // Intensity dictates size and count
             spawnSplat(at: CGPoint(x: x, y: y), intensity: CGFloat(currentAmp), color: color)
         }
 
-        // B. DETECT "HUM/TRAIL" (Sustained volume)
+        // 2. HUM (Sustained sound)
+        // If volume is consistent, paint trails
         if currentAmp > 0.1 {
-            // Spawn trails randomly across the screen
-            // The louder it is, the more trails we spawn per frame
-            let spawnCount = Int(currentAmp * 5)
+            let spawnCount = Int(currentAmp * 3) // Fewer particles than before for elegance
             for _ in 0..<spawnCount {
                 let x = CGFloat.random(in: 0...size.width)
                 let y = CGFloat.random(in: 0...size.height)
@@ -56,8 +54,7 @@ class HarmonicBloomScene: SKScene {
             }
         }
 
-        // 2. Update Particles
-        // We iterate backwards so we can remove dead particles safely
+        // 3. Update Particles (Physics & Fade)
         for (index, particle) in particles.enumerated().reversed() {
             particle.update()
 
@@ -67,25 +64,33 @@ class HarmonicBloomScene: SKScene {
             }
         }
 
-        // Save state for next frame
-        lastAmplitude = lerp(start: lastAmplitude, end: currentAmp, t: 0.1)
+        // Smooth amplitude tracking
+        lastAmplitude = lerp(start: lastAmplitude, end: currentAmp, t: 0.15)
     }
 
-    // MARK: - Spawning Logic
+    // MARK: - Spawning
 
     private func spawnSplat(at position: CGPoint, intensity: CGFloat, color: UIColor) {
-        let count = Int.random(in: 8...15)
+        let count = Int.random(in: 5...12)
 
         for _ in 0..<count {
-            let node = SKShapeNode(circleOfRadius: CGFloat.random(in: 2...6) * intensity)
-            node.position = position
-            node.fillColor = color
-            node.strokeColor = .clear
-            node.blendMode = .add // Makes overlapping colors glow
+            guard let texture = textureCache else { return }
 
-            // Random explosion velocity
+            let scale = CGFloat.random(in: 0.2...0.8) * intensity
+            let node = SKSpriteNode(texture: texture)
+            node.position = position
+            node.color = color
+            node.colorBlendFactor = 1.0 // Use the color fully
+            node.blendMode = .add
+            node.setScale(0) // Start invisible
+
+            // Animate pop-in
+            let popIn = SKAction.scale(to: scale, duration: 0.1)
+            node.run(popIn)
+
+            // "Flick" physics
             let angle = CGFloat.random(in: 0...(2 * .pi))
-            let speed = CGFloat.random(in: 5...15) * intensity
+            let speed = CGFloat.random(in: 5...12) * intensity // Initial burst
             let velocity = CGVector(dx: cos(angle) * speed, dy: sin(angle) * speed)
 
             let particle = BloomNode(node: node, velocity: velocity, type: .splat)
@@ -95,17 +100,17 @@ class HarmonicBloomScene: SKScene {
     }
 
     private func spawnTrail(at position: CGPoint, intensity: CGFloat, color: UIColor) {
-        // Trails are elongated or small fast dots
-        let node = SKShapeNode(circleOfRadius: CGFloat.random(in: 1...3) * intensity)
-        node.position = position
-        node.fillColor = color.withAlphaComponent(0.8)
-        node.strokeColor = .clear
-        node.blendMode = .add
+        guard let texture = textureCache else { return }
 
-        // Direction depends on position (e.g., flow towards center, or random flow)
-        // Let's make them flow in random linear directions for "shooting star" feel
-        let speed = CGFloat.random(in: 3...8) * intensity
-        // Bias direction slightly upwards/rightwards for positive feel, or totally random
+        let node = SKSpriteNode(texture: texture)
+        node.position = position
+        node.color = color.withAlphaComponent(0.6)
+        node.colorBlendFactor = 1.0
+        node.blendMode = .add
+        node.setScale(CGFloat.random(in: 0.1...0.3) * intensity)
+
+        // Gentle drift
+        let speed = CGFloat.random(in: 1...3)
         let angle = CGFloat.random(in: 0...(2 * .pi))
         let velocity = CGVector(dx: cos(angle) * speed, dy: sin(angle) * speed)
 
@@ -114,28 +119,40 @@ class HarmonicBloomScene: SKScene {
         particles.append(particle)
     }
 
-    // MARK: - Helpers
+    // MARK: - Utilities
+
+    private func createSoftTexture() -> SKTexture {
+        let size = CGSize(width: 64, height: 64)
+        let renderer = UIGraphicsImageRenderer(size: size)
+
+        let image = renderer.image { context in
+            let ctx = context.cgContext
+            // Soft Radial Gradient
+            let colors = [UIColor.white.cgColor, UIColor.white.withAlphaComponent(0).cgColor] as CFArray
+            let locations: [CGFloat] = [0.0, 1.0] // Center to Edge
+            guard let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors, locations: locations) else { return }
+
+            ctx.drawRadialGradient(gradient, startCenter: CGPoint(x: 32, y: 32), startRadius: 0, endCenter: CGPoint(x: 32, y: 32), endRadius: 32, options: [])
+        }
+
+        return SKTexture(image: image)
+    }
 
     private func getColor(from frequencies: [Float]) -> UIColor {
-        // Map strongest frequency to color
-        // Find peak frequency index
+        // Find dominant frequency
         var peakIndex = 0
         var peakValue: Float = 0
-
-        // Sample a few bands to save performance
-        for i in stride(from: 0, to: min(frequencies.count, 50), by: 2) {
+        for i in stride(from: 0, to: min(frequencies.count, 60), by: 3) {
             if frequencies[i] > peakValue {
                 peakValue = frequencies[i]
                 peakIndex = i
             }
         }
 
-        // Map index to Hue
-        let hue = CGFloat(peakIndex) / 50.0
-        // Add some random variation so it's not monotone
-        let variedHue = (hue + CGFloat.random(in: -0.1...0.1)).truncatingRemainder(dividingBy: 1.0)
-
-        return UIColor(hue: variedHue, saturation: 0.8, brightness: 1.0, alpha: 1.0)
+        let hue = CGFloat(peakIndex) / 60.0
+        let variedHue = (hue + CGFloat.random(in: -0.05...0.05)).truncatingRemainder(dividingBy: 1.0)
+        // High saturation, lower brightness for "elegant" look
+        return UIColor(hue: variedHue, saturation: 0.7, brightness: 0.9, alpha: 1.0)
     }
 
     private func lerp(start: Float, end: Float, t: Float) -> Float {
@@ -143,9 +160,9 @@ class HarmonicBloomScene: SKScene {
     }
 }
 
-// MARK: - Custom Node Class
+// MARK: - Particle Logic
 class BloomNode {
-    let node: SKShapeNode
+    let node: SKSpriteNode
     var velocity: CGVector
     var alpha: CGFloat = 1.0
     let type: ParticleType
@@ -155,37 +172,32 @@ class BloomNode {
         case trail
     }
 
-    init(node: SKShapeNode, velocity: CGVector, type: ParticleType) {
+    init(node: SKSpriteNode, velocity: CGVector, type: ParticleType) {
         self.node = node
         self.velocity = velocity
         self.type = type
     }
 
     func update() {
-        // Move
+        // Apply Velocity
         node.position.x += velocity.dx
         node.position.y += velocity.dy
 
-        // Behavior based on type
+        // PHYSICS: Friction / Damping
+        // This is the key to the "Paint" feel.
+        // Instead of flying forever, they slow down and stop.
+        velocity.dx *= 0.92
+        velocity.dy *= 0.92
+
+        // FADE: Very slow decay
+        // Allows particles to accumulate on screen
         switch type {
         case .splat:
-            // Splats slow down quickly (friction) and fade fast
-            velocity.dx *= 0.92
-            velocity.dy *= 0.92
-            alpha -= 0.02
-
+            alpha -= 0.005 // Lingers for ~3 seconds
         case .trail:
-            // Trails keep speed but fade slowly
-            // Optional: "Stretch" effect based on velocity
-            if abs(velocity.dx) > 1 || abs(velocity.dy) > 1 {
-                node.xScale = 1 + (abs(velocity.dx) * 0.1)
-                node.yScale = 1 - (abs(velocity.dx) * 0.05)
-                node.zRotation = atan2(velocity.dy, velocity.dx)
-            }
-            alpha -= 0.01 // Slower fade
+            alpha -= 0.008
         }
 
-        // Apply Alpha
         node.alpha = alpha
     }
 

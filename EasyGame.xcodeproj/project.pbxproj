@@ -37,7 +37,8 @@
 		AA0076 /* ShapeAudioEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0077 /* ShapeAudioEngine.swift */; };
 		AA0084 /* HarmonicBloomViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0086 /* HarmonicBloomViewModel.swift */; };
 		AA0085 /* HarmonicBloomView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0087 /* HarmonicBloomView.swift */; };
-		AA0BF6 /* www in Resources */ = {isa = PBXBuildFile; fileRef = AA2B07 /* www */; };
+		AAB9D0 /* AudioSpectrumProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA8F65 /* AudioSpectrumProcessor.swift */; };
+		AADFB1 /* HarmonicBloomScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA143C /* HarmonicBloomScene.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -72,7 +73,8 @@
 		AA0077 /* ShapeAudioEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShapeAudioEngine.swift; sourceTree = "<group>"; };
 		AA0086 /* HarmonicBloomViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HarmonicBloomViewModel.swift; sourceTree = "<group>"; };
 		AA0087 /* HarmonicBloomView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HarmonicBloomView.swift; sourceTree = "<group>"; };
-		AA2B07 /* www */ = {isa = PBXFileReference; lastKnownFileType = folder; path = www; sourceTree = "<group>"; };
+		AA8F65 /* AudioSpectrumProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioSpectrumProcessor.swift; sourceTree = "<group>"; };
+		AA143C /* HarmonicBloomScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HarmonicBloomScene.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -148,6 +150,7 @@
 				AA0063 /* MagicalSwirlView.swift */,
 				AA0065 /* MagicalSwirlScene.swift */,
 				AA0087 /* HarmonicBloomView.swift */,
+				AA143C /* HarmonicBloomScene.swift */,
 			);
 			path = Games;
 			sourceTree = "<group>";
@@ -191,6 +194,7 @@
 			isa = PBXGroup;
 			children = (
 				AA0077 /* ShapeAudioEngine.swift */,
+				AA8F65 /* AudioSpectrumProcessor.swift */,
 			);
 			path = Audio;
 			sourceTree = "<group>";
@@ -253,9 +257,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AA0019 /* Assets.xcassets in Resources */,
-			
-				AA0BF6 /* www in Resources */,);
+				AA0019 /* Assets.xcassets in Resources */,);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
@@ -293,8 +295,9 @@
 				AA0074 /* SingingShapeModel.swift in Sources */,
 				AA0076 /* ShapeAudioEngine.swift in Sources */,
 				AA0084 /* HarmonicBloomViewModel.swift in Sources */,
-				AA0085 /* HarmonicBloomView.swift in Sources */,
-			);
+				AA0085 /* HarmonicBloomView.swift in Sources */,				AAA0F7 /* HarmonicBloomScene.swift in Sources */,
+				AAB9D0 /* AudioSpectrumProcessor.swift in Sources */,
+				AADFB1 /* HarmonicBloomScene.swift in Sources */,);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */

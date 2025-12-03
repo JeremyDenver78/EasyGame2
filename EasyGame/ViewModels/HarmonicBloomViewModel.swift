@@ -1,23 +1,29 @@
 import Foundation
 import AVFoundation
-import Combine
+import SwiftUI
 
 class HarmonicBloomViewModel: ObservableObject {
     @Published var hasMicrophoneAccess: Bool = false
     @Published var permissionDenied: Bool = false
-    @Published var contentMissing: Bool = false
+
+    // Connect to the processor
+    private let audioProcessor = AudioSpectrumProcessor.shared
+
+    // Computed properties for the Scene to read directly
+    var frequencyData: [Float] {
+        return audioProcessor.frequencyData
+    }
+
+    var currentAmplitude: Float {
+        return audioProcessor.amplitude
+    }
 
     func checkPermissions() {
-        // First check if the www folder exists
-        if Bundle.main.url(forResource: "www", withExtension: nil) == nil {
-            self.contentMissing = true
-            return
-        }
-
         let status = AVAudioSession.sharedInstance().recordPermission
         switch status {
         case .granted:
             self.hasMicrophoneAccess = true
+            self.startAudio()
         case .denied:
             self.permissionDenied = true
         case .undetermined:
@@ -32,10 +38,26 @@ class HarmonicBloomViewModel: ObservableObject {
             DispatchQueue.main.async {
                 if granted {
                     self?.hasMicrophoneAccess = true
+                    self?.startAudio()
                 } else {
                     self?.permissionDenied = true
                 }
             }
         }
+    }
+
+    private func startAudio() {
+        do {
+            // Configure session for playback and recording
+            try AVAudioSession.sharedInstance().setCategory(.playAndRecord, options: [.defaultToSpeaker, .mixWithOthers, .allowBluetooth])
+            try AVAudioSession.sharedInstance().setActive(true)
+            audioProcessor.start()
+        } catch {
+            print("Audio Session Error: \(error)")
+        }
+    }
+
+    func stopAudio() {
+        audioProcessor.stop()
     }
 }

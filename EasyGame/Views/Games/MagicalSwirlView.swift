@@ -244,7 +244,11 @@ struct MagicalSwirlView: View {
         }
         .navigationBarBackButtonHidden(true)
         .onAppear {
-            // Setup scene on main thread, but don't block
+            // Warm up audio and haptics (non-blocking)
+            viewModel.prepareAudio()
+            viewModel.prepareHaptics()
+
+            // Setup scene on main thread
             setupScene()
         }
     }

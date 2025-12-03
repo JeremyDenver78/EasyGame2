@@ -68,6 +68,24 @@ enum GameType: String, CaseIterable, Identifiable {
         case .game5: return [Color.gray, Color.gray.opacity(0.5)]
         }
     }
+
+    @ViewBuilder
+    var destinationView: some View {
+        switch self {
+        case .jigsawPuzzle:
+            PuzzleSelectionView()
+        case .bubblePath:
+            BubblePathGameView()
+        case .sandfall:
+            SandfallGameView()
+        case .shapesThatSing:
+            ShapesThatSingView()
+        case .magicalSwirl:
+            MagicalSwirlView()
+        default:
+            Text("Coming Soon")
+        }
+    }
 }
 
 struct Game: Identifiable {

@@ -1,125 +1,66 @@
 import SwiftUI
 
+// MARK: - Game Selection View
 struct GameSelectionView: View {
+    @Environment(\.dismiss) private var dismiss
     @StateObject private var viewModel = HomeViewModel()
-    
+    @State private var appearAnimation = false
+
     var body: some View {
         ZStack {
-            Color(red: 0.95, green: 0.98, blue: 1.0)
-                .ignoresSafeArea()
-            
-            ScrollView {
-                VStack(spacing: 20) {
-                    ForEach(viewModel.games) { game in
-                        if game.isComingSoon {
-                            ComingSoonGameCard(game: game)
-                        } else {
-                            NavigationLink(destination: destinationView(for: game)) {
-                                ActiveGameCard(game: game)
-                            }
-                            .buttonStyle(PlainButtonStyle())
+            // Background
+            InfiniteGradientBackground()
+
+            VStack(spacing: 0) {
+                // Header
+                HStack {
+                    Button(action: { dismiss() }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 16, weight: .semibold))
+                            Text("Back")
+                                .font(.system(size: 17, weight: .medium, design: .rounded))
+                        }
+                        .foregroundColor(.calmBlue)
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 8)
+
+                // Title
+                Text("Select a Game")
+                    .font(.system(size: 34, weight: .bold, design: .rounded))
+                    .foregroundColor(.softText)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 16)
+                    .padding(.bottom, 24)
+
+                // Game list
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 16) {
+                        ForEach(Array(viewModel.games.enumerated()), id: \.element.id) { index, game in
+                            GameCard(game: game)
+                                .opacity(appearAnimation ? 1 : 0)
+                                .offset(y: appearAnimation ? 0 : 20)
+                                .animation(
+                                    .spring(response: 0.5, dampingFraction: 0.8)
+                                    .delay(Double(index) * 0.08),
+                                    value: appearAnimation
+                                )
                         }
                     }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 40)
                 }
-                .padding()
             }
         }
-        .navigationTitle("Select a Game")
-        .navigationBarTitleDisplayMode(.large)
-    }
-    
-    @ViewBuilder
-    func destinationView(for game: Game) -> some View {
-        switch game.type {
-        case .jigsawPuzzle:
-            PuzzleSelectionView()
-        case .bubblePath:
-            BubblePathGameView()
-        case .sandfall:
-            SandfallGameView()
-        case .shapesThatSing:
-            ShapesThatSingView()
-        case .magicalSwirl:
-            MagicalSwirlView()
-        default:
-            Text("Coming Soon")
-        }
-    }
-}
-
-struct ActiveGameCard: View {
-    let game: Game
-    
-    var body: some View {
-        HStack(spacing: 20) {
-            Image(systemName: game.type.iconName)
-                .resizable()
-                .scaledToFit()
-                .frame(width: 60, height: 60)
-                .foregroundColor(.blue.opacity(0.7))
-                .padding()
-                .background(Color.blue.opacity(0.1))
-                .cornerRadius(15)
-            
-            VStack(alignment: .leading, spacing: 5) {
-                Text(game.type.title)
-                    .font(.title3)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.primary)
-                
-                Text(game.type.description)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .lineLimit(2)
+        .navigationBarHidden(true)
+        .onAppear {
+            withAnimation {
+                appearAnimation = true
             }
-            
-            Spacer()
-            
-            Image(systemName: "chevron.right")
-                .foregroundColor(.gray)
-                .font(.title3)
         }
-        .padding()
-        .background(Color.white)
-        .cornerRadius(15)
-        .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
-    }
-}
-
-struct ComingSoonGameCard: View {
-    let game: Game
-    
-    var body: some View {
-        HStack(spacing: 20) {
-            Image(systemName: game.type.iconName)
-                .resizable()
-                .scaledToFit()
-                .frame(width: 60, height: 60)
-                .foregroundColor(.gray.opacity(0.5))
-                .padding()
-                .background(Color.gray.opacity(0.1))
-                .cornerRadius(15)
-            
-            VStack(alignment: .leading, spacing: 5) {
-                Text(game.type.title)
-                    .font(.title3)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.secondary)
-                
-                Text(game.type.description)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .italic()
-            }
-            
-            Spacer()
-        }
-        .padding()
-        .background(Color.white.opacity(0.5))
-        .cornerRadius(15)
-        .overlay(
-            RoundedRectangle(cornerRadius: 15)
-                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-        )
     }
 }

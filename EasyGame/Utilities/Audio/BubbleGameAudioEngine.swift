@@ -15,17 +15,17 @@ class BubbleGameAudioEngine {
     private let reverb = AVAudioUnitReverb()
 
     private var isPlaying = false
-    private var isInitialized = false
 
     private init() {
         mainMixer = engine.mainMixerNode
-        setupAudioSession()
-        // Defer graph setup until first use to avoid conflicts
+        // Note: We intentionally do not setup the session in init.
+        // We do it on 'start' to ensure we override any settings from other games.
     }
 
     private func setupAudioSession() {
         do {
-            try AVAudioSession.sharedInstance().setCategory(.ambient, options: .mixWithOthers)
+            // Force session to ambient to ensure clean slate from other games (like HarmonicBloom)
+            try AVAudioSession.sharedInstance().setCategory(.ambient, mode: .default, options: .mixWithOthers)
             try AVAudioSession.sharedInstance().setActive(true)
             print("✓ Bubble Audio Session configured")
         } catch {
@@ -36,33 +36,39 @@ class BubbleGameAudioEngine {
     // MARK: - Graph Management
 
     private func rebuildGraph() {
-        // 1. Ensure nodes are attached (safe to call even if already attached)
-        if dronePlayer.engine == nil { engine.attach(dronePlayer) }
-        if collisionPlayer.engine == nil { engine.attach(collisionPlayer) }
-        if reverb.engine == nil { engine.attach(reverb) }
+        // 1. Stop engine to safely modify graph
+        engine.stop()
 
-        // 2. Define internal processing format (44.1kHz stereo)
+        // 2. Detach all nodes to clear stale state (Critical Fix)
+        // If we don't detach, previous broken connections might persist
+        engine.detach(dronePlayer)
+        engine.detach(collisionPlayer)
+        engine.detach(reverb)
+
+        // 3. Attach nodes
+        engine.attach(dronePlayer)
+        engine.attach(collisionPlayer)
+        engine.attach(reverb)
+
+        // 4. Define format (standard 44.1k stereo)
         guard let format = AVAudioFormat(standardFormatWithSampleRate: 44100.0, channels: 2) else {
             print("❌ Failed to create audio format")
             return
         }
 
-        // 3. Connect Nodes
-        // Note: engine.connect re-establishes connections if they were broken
+        // 5. Connect Nodes: Players -> Reverb -> MainMixer
         engine.connect(dronePlayer, to: reverb, format: format)
         engine.connect(collisionPlayer, to: reverb, format: format)
         engine.connect(reverb, to: mainMixer, format: format)
 
-        // 4. Connect to Output
-        // CRITICAL FIX: Use nil format to allow engine to handle hardware sample rate mixing (e.g. 48k output)
+        // 6. Connect to Output (Use nil format to allow engine to handle hardware mixing)
         engine.connect(mainMixer, to: engine.outputNode, format: nil)
 
-        // 5. Configure Reverb
+        // 7. Configure Reverb
         reverb.loadFactoryPreset(.mediumHall)
         reverb.wetDryMix = 30
 
-        isInitialized = true
-        print("✓ Bubble audio graph initialized")
+        print("✓ Bubble Audio Graph Rebuilt")
     }
 
     // MARK: - Background Ambient Drone
@@ -70,40 +76,29 @@ class BubbleGameAudioEngine {
     func startAmbientDrone() {
         guard !isPlaying else { return }
 
+        // 1. Reset Session (Fixes category conflicts)
+        setupAudioSession()
+
+        // 2. Rebuild Graph (Fixes 'disconnected state' crash)
+        rebuildGraph()
+
+        // 3. Generate Buffer
+        guard let droneBuffer = generateAmbientDrone(duration: 10.0) else { return }
+
+        // 4. Schedule Loop
+        if !dronePlayer.isPlaying {
+            dronePlayer.scheduleBuffer(droneBuffer, at: nil, options: .loops, completionHandler: nil)
+        }
+
+        // 5. Start Engine
         do {
-            // CRITICAL FIX: Ensure graph is valid before starting.
-            // Other audio engines in the app might have invalidated this graph.
-            rebuildGraph()
-
-            guard isInitialized else {
-                print("❌ Audio graph not initialized")
-                return
-            }
-
-            // Generate buffer if needed (buffer generation is fast enough to do here or cache)
-            guard let droneBuffer = generateAmbientDrone(duration: 10.0) else {
-                print("❌ Failed to generate drone buffer")
-                return
-            }
-
-            // Schedule and loop
-            if !dronePlayer.isPlaying {
-                dronePlayer.scheduleBuffer(droneBuffer, at: nil, options: .loops, completionHandler: nil)
-            }
-
-            // Start engine
-            if !engine.isRunning {
-                try engine.start()
-                print("✓ Bubble Audio Engine started")
-            }
-
+            try engine.start()
             dronePlayer.volume = 0.15
             dronePlayer.play()
             isPlaying = true
-
-            print("✓ Ambient drone started")
+            print("✓ Bubble Audio Started")
         } catch {
-            print("❌ Failed to start ambient drone: \(error)")
+            print("❌ Failed to start Bubble Audio Engine: \(error)")
             isPlaying = false
         }
     }
@@ -112,70 +107,40 @@ class BubbleGameAudioEngine {
         guard isPlaying else { return }
 
         dronePlayer.stop()
+        engine.stop()
         isPlaying = false
 
-        // Optional: Pause engine to save resources, but keep graph intact
-        engine.pause()
-
-        print("✓ Ambient drone stopped")
+        print("✓ Bubble Audio Stopped")
     }
 
     // MARK: - Collision Sound
 
     func playCollisionSound() {
-        do {
-            // Safety check: ensure player is connected
-            if collisionPlayer.engine == nil {
-                rebuildGraph()
-            }
+        // Only play if engine is actually running to avoid crashes
+        guard engine.isRunning else { return }
 
-            guard isInitialized else {
-                print("❌ Cannot play collision: audio graph not initialized")
-                return
-            }
+        guard let collisionBuffer = generateSoftThud(frequency: 180.0, duration: 0.4) else { return }
 
-            // Ensure engine is running
-            if !engine.isRunning {
-                try engine.start()
-            }
+        collisionPlayer.scheduleBuffer(collisionBuffer, at: nil, options: [], completionHandler: nil)
+        collisionPlayer.volume = 0.25
 
-            guard let collisionBuffer = generateSoftThud(frequency: 180.0, duration: 0.4) else {
-                print("❌ Failed to generate collision buffer")
-                return
-            }
-
-            collisionPlayer.scheduleBuffer(collisionBuffer, at: nil, options: [], completionHandler: nil)
-            collisionPlayer.volume = 0.25
-
-            if !collisionPlayer.isPlaying {
-                collisionPlayer.play()
-            }
-        } catch {
-            print("❌ Failed to play collision sound: \(error)")
+        if !collisionPlayer.isPlaying {
+            collisionPlayer.play()
         }
     }
 
     // MARK: - Audio Generation
 
     private func generateAmbientDrone(duration: Double) -> AVAudioPCMBuffer? {
-        guard let format = AVAudioFormat(standardFormatWithSampleRate: 44100.0, channels: 2) else {
-            print("❌ Failed to create drone format")
-            return nil
-        }
+        guard let format = AVAudioFormat(standardFormatWithSampleRate: 44100.0, channels: 2) else { return nil }
 
         let sampleRate = 44100.0
         let frameCount = AVAudioFrameCount(sampleRate * duration)
 
-        guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount) else {
-            print("❌ Failed to create drone buffer")
-            return nil
-        }
+        guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount) else { return nil }
         buffer.frameLength = frameCount
 
-        guard let channels = buffer.floatChannelData else {
-            print("❌ Failed to get drone channel data")
-            return nil
-        }
+        guard let channels = buffer.floatChannelData else { return nil }
 
         let baseFreq = 110.0 // A2
         let fifthFreq = 165.0 // E3
@@ -214,24 +179,15 @@ class BubbleGameAudioEngine {
     }
 
     private func generateSoftThud(frequency: Double, duration: Double) -> AVAudioPCMBuffer? {
-        guard let format = AVAudioFormat(standardFormatWithSampleRate: 44100.0, channels: 2) else {
-            print("❌ Failed to create thud format")
-            return nil
-        }
+        guard let format = AVAudioFormat(standardFormatWithSampleRate: 44100.0, channels: 2) else { return nil }
 
         let sampleRate = 44100.0
         let frameCount = AVAudioFrameCount(sampleRate * duration)
 
-        guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount) else {
-            print("❌ Failed to create thud buffer")
-            return nil
-        }
+        guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount) else { return nil }
         buffer.frameLength = frameCount
 
-        guard let channels = buffer.floatChannelData else {
-            print("❌ Failed to get thud channel data")
-            return nil
-        }
+        guard let channels = buffer.floatChannelData else { return nil }
 
         for i in 0..<Int(frameCount) {
             let t = Double(i) / sampleRate

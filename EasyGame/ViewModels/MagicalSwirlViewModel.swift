@@ -187,6 +187,7 @@ class MagicalSwirlViewModel: ObservableObject {
     @Published var styleMode: StyleMode = .random
     @Published var isHapticsEnabled: Bool = true
     @Published var volume: Double = 0.5 // Range: 0.0 - 1.0
+    @Published var hasCreatedFirstSwirl: Bool = false // Track first touch
 
     // MARK: - Enums
     enum ColorMode: String, CaseIterable, Identifiable {

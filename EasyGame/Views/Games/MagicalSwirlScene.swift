@@ -38,6 +38,11 @@ class MagicalSwirlScene: SKScene {
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let viewModel = viewModel else { return }
 
+        // Mark first swirl created (hides instructions)
+        if !viewModel.hasCreatedFirstSwirl {
+            viewModel.hasCreatedFirstSwirl = true
+        }
+
         for touch in touches {
             let location = touch.location(in: self)
             createTrail(at: location, for: touch)

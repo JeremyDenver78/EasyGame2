@@ -4,7 +4,6 @@ import SpriteKit
 struct MagicalSwirlView: View {
     @StateObject private var viewModel = MagicalSwirlViewModel()
     @State private var showSettings = false
-    @State private var showInstructions = true
     @State private var scene: MagicalSwirlScene?
     @Environment(\.dismiss) private var dismiss
 
@@ -28,63 +27,20 @@ struct MagicalSwirlView: View {
                     .ignoresSafeArea()
             }
 
-            // Instructions Overlay
-            if showInstructions {
+            // Simple Instructions (disappears on first touch)
+            if !viewModel.hasCreatedFirstSwirl {
                 VStack {
                     Spacer()
-                    VStack(spacing: 16) {
-                        Text("Magical Swirl")
-                            .font(.title)
-                            .fontWeight(.bold)
-                            .foregroundColor(.white)
-
-                        Text("Touch and drag your fingers across the screen to create beautiful, flowing trails of light")
-                            .font(.body)
-                            .multilineTextAlignment(.center)
-                            .foregroundColor(.white.opacity(0.9))
-                            .padding(.horizontal, 40)
-
-                        Text("Use multiple fingers for more trails!")
-                            .font(.subheadline)
-                            .foregroundColor(.white.opacity(0.7))
-
-                        Button(action: {
-                            withAnimation {
-                                showInstructions = false
-                            }
-                        }) {
-                            Text("Start Creating")
-                                .font(.headline)
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 30)
-                                .padding(.vertical, 12)
-                                .background(
-                                    LinearGradient(
-                                        colors: [Color.purple, Color.blue],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                )
-                                .cornerRadius(25)
-                        }
-                        .padding(.top, 8)
-                    }
-                    .padding(30)
-                    .background(
-                        RoundedRectangle(cornerRadius: 20)
-                            .fill(Color.black.opacity(0.7))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 20)
-                                    .stroke(Color.white.opacity(0.3), lineWidth: 1)
-                            )
-                    )
-                    .padding(.horizontal, 30)
+                    Text("Touch and drag to create magical swirls")
+                        .font(.body)
+                        .foregroundColor(.white.opacity(0.7))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 40)
                     Spacer()
                 }
-                .transition(.scale.combined(with: .opacity))
             }
 
-            // Top Bar with Back Button and Title
+            // Simple Back Button (top left)
             VStack {
                 HStack {
                     Button(action: {
@@ -92,31 +48,17 @@ struct MagicalSwirlView: View {
                     }) {
                         HStack(spacing: 4) {
                             Image(systemName: "chevron.left")
-                                .font(.system(size: 16, weight: .semibold))
+                                .font(.system(size: 17, weight: .regular))
                             Text("Back")
                                 .font(.system(size: 17))
                         }
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(Color.black.opacity(0.3))
-                        .cornerRadius(20)
+                        .foregroundColor(.blue)
                     }
+                    .padding(.leading, 16)
+                    .padding(.top, 8)
 
                     Spacer()
-
-                    Text("Magical Swirl")
-                        .font(.headline)
-                        .foregroundColor(.white.opacity(0.8))
-
-                    Spacer()
-
-                    // Invisible placeholder for symmetry
-                    Color.clear
-                        .frame(width: 70)
                 }
-                .padding(.horizontal)
-                .padding(.top, 8)
 
                 Spacer()
             }

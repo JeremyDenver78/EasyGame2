@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		AA0001 /* EasyGameApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0002 /* EasyGameApp.swift */; };
-		AA0003 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0004 /* HomeView.swift */; };
 		AA0005 /* PuzzleSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0006 /* PuzzleSelectionView.swift */; };
 		AA0007 /* PuzzleGameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0008 /* PuzzleGameView.swift */; };
 		AA0009 /* GameModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0010 /* GameModel.swift */; };
@@ -22,7 +21,6 @@
 /* Begin PBXFileReference section */
 		AA0000 /* EasyGame.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = EasyGame.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA0002 /* EasyGameApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EasyGameApp.swift; sourceTree = "<group>"; };
-		AA0004 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		AA0006 /* PuzzleSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PuzzleSelectionView.swift; sourceTree = "<group>"; };
 		AA0008 /* PuzzleGameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PuzzleGameView.swift; sourceTree = "<group>"; };
 		AA0010 /* GameModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameModel.swift; sourceTree = "<group>"; };
@@ -76,7 +74,6 @@
 		AA0025 /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				AA0004 /* HomeView.swift */,
 				AA0006 /* PuzzleSelectionView.swift */,
 				AA0008 /* PuzzleGameView.swift */,
 			);
@@ -179,7 +176,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				AA0001 /* EasyGameApp.swift in Sources */,
-				AA0003 /* HomeView.swift in Sources */,
 				AA0005 /* PuzzleSelectionView.swift in Sources */,
 				AA0007 /* PuzzleGameView.swift in Sources */,
 				AA0009 /* GameModel.swift in Sources */,

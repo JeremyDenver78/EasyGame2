@@ -20,6 +20,20 @@
 		AA0042 /* GameSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0043 /* GameSelectionView.swift */; };
 		AA0044 /* ColorExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0045 /* ColorExtensions.swift */; };
 		AA0046 /* ShapeUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0047 /* ShapeUtils.swift */; };
+		AA0050 /* GameCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0051 /* GameCard.swift */; };
+		AA0052 /* InfiniteGradientBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0053 /* InfiniteGradientBackground.swift */; };
+		AA0054 /* SoftButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0055 /* SoftButtonStyle.swift */; };
+		AA0056 /* BubblePathGameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0057 /* BubblePathGameView.swift */; };
+		AA0058 /* SandfallGameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0059 /* SandfallGameView.swift */; };
+		AA0060 /* ShapesThatSingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0061 /* ShapesThatSingView.swift */; };
+		AA0062 /* MagicalSwirlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0063 /* MagicalSwirlView.swift */; };
+		AA0064 /* MagicalSwirlScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0065 /* MagicalSwirlScene.swift */; };
+		AA0066 /* BubblePathViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0067 /* BubblePathViewModel.swift */; };
+		AA0068 /* SandfallViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0069 /* SandfallViewModel.swift */; };
+		AA0070 /* ShapesThatSingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0071 /* ShapesThatSingViewModel.swift */; };
+		AA0072 /* MagicalSwirlViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0073 /* MagicalSwirlViewModel.swift */; };
+		AA0074 /* SingingShapeModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0075 /* SingingShapeModel.swift */; };
+		AA0076 /* ShapeAudioEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0077 /* ShapeAudioEngine.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -37,6 +51,20 @@
 		AA0043 /* GameSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameSelectionView.swift; sourceTree = "<group>"; };
 		AA0045 /* ColorExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorExtensions.swift; sourceTree = "<group>"; };
 		AA0047 /* ShapeUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShapeUtils.swift; sourceTree = "<group>"; };
+		AA0051 /* GameCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameCard.swift; sourceTree = "<group>"; };
+		AA0053 /* InfiniteGradientBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InfiniteGradientBackground.swift; sourceTree = "<group>"; };
+		AA0055 /* SoftButtonStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoftButtonStyle.swift; sourceTree = "<group>"; };
+		AA0057 /* BubblePathGameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BubblePathGameView.swift; sourceTree = "<group>"; };
+		AA0059 /* SandfallGameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SandfallGameView.swift; sourceTree = "<group>"; };
+		AA0061 /* ShapesThatSingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShapesThatSingView.swift; sourceTree = "<group>"; };
+		AA0063 /* MagicalSwirlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MagicalSwirlView.swift; sourceTree = "<group>"; };
+		AA0065 /* MagicalSwirlScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MagicalSwirlScene.swift; sourceTree = "<group>"; };
+		AA0067 /* BubblePathViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BubblePathViewModel.swift; sourceTree = "<group>"; };
+		AA0069 /* SandfallViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SandfallViewModel.swift; sourceTree = "<group>"; };
+		AA0071 /* ShapesThatSingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShapesThatSingViewModel.swift; sourceTree = "<group>"; };
+		AA0073 /* MagicalSwirlViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MagicalSwirlViewModel.swift; sourceTree = "<group>"; };
+		AA0075 /* SingingShapeModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SingingShapeModel.swift; sourceTree = "<group>"; };
+		AA0077 /* ShapeAudioEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShapeAudioEngine.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -86,8 +114,32 @@
 				AA0043 /* GameSelectionView.swift */,
 				AA0006 /* PuzzleSelectionView.swift */,
 				AA0008 /* PuzzleGameView.swift */,
+				AA0078 /* Components */,
+				AA0079 /* Games */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		AA0078 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				AA0051 /* GameCard.swift */,
+				AA0053 /* InfiniteGradientBackground.swift */,
+				AA0055 /* SoftButtonStyle.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		AA0079 /* Games */ = {
+			isa = PBXGroup;
+			children = (
+				AA0057 /* BubblePathGameView.swift */,
+				AA0059 /* SandfallGameView.swift */,
+				AA0061 /* ShapesThatSingView.swift */,
+				AA0063 /* MagicalSwirlView.swift */,
+				AA0065 /* MagicalSwirlScene.swift */,
+			);
+			path = Games;
 			sourceTree = "<group>";
 		};
 		AA0026 /* ViewModels */ = {
@@ -95,6 +147,10 @@
 			children = (
 				AA0014 /* HomeViewModel.swift */,
 				AA0016 /* PuzzleGameViewModel.swift */,
+				AA0067 /* BubblePathViewModel.swift */,
+				AA0069 /* SandfallViewModel.swift */,
+				AA0071 /* ShapesThatSingViewModel.swift */,
+				AA0073 /* MagicalSwirlViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -104,6 +160,7 @@
 			children = (
 				AA0010 /* GameModel.swift */,
 				AA0012 /* PuzzleModel.swift */,
+				AA0075 /* SingingShapeModel.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -114,8 +171,17 @@
 				AA0018 /* ImageSplitter.swift */,
 				AA0047 /* ShapeUtils.swift */,
 				AA0045 /* ColorExtensions.swift */,
+				AA0080 /* Audio */,
 			);
 			path = Utilities;
+			sourceTree = "<group>";
+		};
+		AA0080 /* Audio */ = {
+			isa = PBXGroup;
+			children = (
+				AA0077 /* ShapeAudioEngine.swift */,
+			);
+			path = Audio;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -199,6 +265,20 @@
 				AA0017 /* ImageSplitter.swift in Sources */,
 				AA0044 /* ColorExtensions.swift in Sources */,
 				AA0046 /* ShapeUtils.swift in Sources */,
+				AA0050 /* GameCard.swift in Sources */,
+				AA0052 /* InfiniteGradientBackground.swift in Sources */,
+				AA0054 /* SoftButtonStyle.swift in Sources */,
+				AA0056 /* BubblePathGameView.swift in Sources */,
+				AA0058 /* SandfallGameView.swift in Sources */,
+				AA0060 /* ShapesThatSingView.swift in Sources */,
+				AA0062 /* MagicalSwirlView.swift in Sources */,
+				AA0064 /* MagicalSwirlScene.swift in Sources */,
+				AA0066 /* BubblePathViewModel.swift in Sources */,
+				AA0068 /* SandfallViewModel.swift in Sources */,
+				AA0070 /* ShapesThatSingViewModel.swift in Sources */,
+				AA0072 /* MagicalSwirlViewModel.swift in Sources */,
+				AA0074 /* SingingShapeModel.swift in Sources */,
+				AA0076 /* ShapeAudioEngine.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

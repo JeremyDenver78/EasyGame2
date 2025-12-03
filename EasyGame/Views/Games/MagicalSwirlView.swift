@@ -4,7 +4,9 @@ import SpriteKit
 struct MagicalSwirlView: View {
     @StateObject private var viewModel = MagicalSwirlViewModel()
     @State private var showSettings = false
-    
+    @State private var showInstructions = true
+    @Environment(\.dismiss) private var dismiss
+
     // Create scene once
     @State private var scene: MagicalSwirlScene = {
         let scene = MagicalSwirlScene()
@@ -30,14 +32,110 @@ struct MagicalSwirlView: View {
             SpriteView(scene: scene, options: [.allowsTransparency])
                 .ignoresSafeArea()
                 .onAppear {
-                    scene.viewModel = viewModel
+                    // Ensure scene gets the viewModel reference
+                    DispatchQueue.main.async {
+                        scene.viewModel = viewModel
+                    }
                 }
                 .onChange(of: viewModel.fadeSpeed) { _ in updateScene() }
                 .onChange(of: viewModel.trailThickness) { _ in updateScene() }
                 .onChange(of: viewModel.glowStrength) { _ in updateScene() }
                 .onChange(of: viewModel.colorMode) { _ in updateScene() }
                 .onChange(of: viewModel.styleMode) { _ in updateScene() }
+
+            // Instructions Overlay
+            if showInstructions {
+                VStack {
+                    Spacer()
+                    VStack(spacing: 16) {
+                        Text("Magical Swirl")
+                            .font(.title)
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
+
+                        Text("Touch and drag your fingers across the screen to create beautiful, flowing trails of light")
+                            .font(.body)
+                            .multilineTextAlignment(.center)
+                            .foregroundColor(.white.opacity(0.9))
+                            .padding(.horizontal, 40)
+
+                        Text("Use multiple fingers for more trails!")
+                            .font(.subheadline)
+                            .foregroundColor(.white.opacity(0.7))
+
+                        Button(action: {
+                            withAnimation {
+                                showInstructions = false
+                            }
+                        }) {
+                            Text("Start Creating")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 30)
+                                .padding(.vertical, 12)
+                                .background(
+                                    LinearGradient(
+                                        colors: [Color.purple, Color.blue],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                                .cornerRadius(25)
+                        }
+                        .padding(.top, 8)
+                    }
+                    .padding(30)
+                    .background(
+                        RoundedRectangle(cornerRadius: 20)
+                            .fill(Color.black.opacity(0.7))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 20)
+                                    .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                            )
+                    )
+                    .padding(.horizontal, 30)
+                    Spacer()
+                }
+                .transition(.scale.combined(with: .opacity))
+            }
             
+            // Top Bar with Back Button and Title
+            VStack {
+                HStack {
+                    Button(action: {
+                        dismiss()
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 16, weight: .semibold))
+                            Text("Back")
+                                .font(.system(size: 17))
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(Color.black.opacity(0.3))
+                        .cornerRadius(20)
+                    }
+
+                    Spacer()
+
+                    Text("Magical Swirl")
+                        .font(.headline)
+                        .foregroundColor(.white.opacity(0.8))
+
+                    Spacer()
+
+                    // Invisible placeholder for symmetry
+                    Color.clear
+                        .frame(width: 70)
+                }
+                .padding(.horizontal)
+                .padding(.top, 8)
+
+                Spacer()
+            }
+
             // Settings Button
             VStack {
                 Spacer()
@@ -53,6 +151,10 @@ struct MagicalSwirlView: View {
                             .foregroundColor(.white.opacity(0.8))
                             .padding()
                             .background(Circle().fill(Color.black.opacity(0.4)))
+                            .overlay(
+                                Circle()
+                                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                            )
                     }
                     .padding()
                 }
@@ -155,7 +257,7 @@ struct MagicalSwirlView: View {
                 .transition(.scale.combined(with: .opacity))
             }
         }
-        .navigationBarHidden(true)
+        .navigationBarBackButtonHidden(true)
     }
     
     private func updateScene() {

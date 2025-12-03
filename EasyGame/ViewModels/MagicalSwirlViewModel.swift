@@ -143,10 +143,17 @@ class MagicalSwirlViewModel: ObservableObject {
     }
     
     // MARK: - Audio & Haptics
-    private let audio = SwirlAudioEngine()
+    private var audio: SwirlAudioEngine?
     private var hapticEngine: CHHapticEngine?
-    
+
     init() {
+        // Initialize audio asynchronously to avoid blocking main thread
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            let audioEngine = SwirlAudioEngine()
+            DispatchQueue.main.async {
+                self?.audio = audioEngine
+            }
+        }
         setupHaptics()
     }
     
@@ -161,19 +168,19 @@ class MagicalSwirlViewModel: ObservableObject {
     }
     
     func playTouchSound() {
-        audio.playTouchSound(volume: volume)
+        audio?.playTouchSound(volume: volume)
     }
-    
+
     func playMoveSound(speed: Double) {
-        audio.playMoveSound(speed: speed, volume: volume)
+        audio?.playMoveSound(speed: speed, volume: volume)
     }
-    
+
     func stopMoveSound() {
-        audio.stopMoveSound()
+        audio?.stopMoveSound()
     }
-    
+
     func playFadeSound() {
-        audio.playFadeSound(volume: volume)
+        audio?.playFadeSound(volume: volume)
     }
     
     // MARK: - Haptics

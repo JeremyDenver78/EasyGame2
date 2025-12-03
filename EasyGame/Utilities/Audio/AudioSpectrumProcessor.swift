@@ -7,17 +7,15 @@ class AudioSpectrumProcessor: ObservableObject {
 
     private let engine = AVAudioEngine()
     private let bufferSize = 1024
+    private var tapInstalled = false
 
     @Published var frequencyData: [Float] = Array(repeating: 0.0, count: 256)
     @Published var amplitude: Float = 0.0
 
     private var fftSetup: vDSP_DFT_Setup?
 
-    init() {
-        setupAudio()
-    }
-
     func start() {
+        ensureTap()
         if !engine.isRunning {
             try? engine.start()
         }
@@ -25,21 +23,33 @@ class AudioSpectrumProcessor: ObservableObject {
 
     func stop() {
         engine.stop()
+        if tapInstalled {
+            engine.inputNode.removeTap(onBus: 0)
+            tapInstalled = false
+        }
     }
 
-    private func setupAudio() {
-        let inputNode = engine.inputNode
-        let format = inputNode.outputFormat(forBus: 0)
+    private func ensureTap() {
+        if !tapInstalled {
+            let inputNode = engine.inputNode
+            let format = inputNode.outputFormat(forBus: 0)
 
-        let log2n = vDSP_Length(log2(Float(bufferSize)))
-        fftSetup = vDSP_DFT_zop_CreateSetup(nil, vDSP_Length(bufferSize), vDSP_DFT_Direction.FORWARD)
+            if fftSetup == nil {
+                let log2n = vDSP_Length(log2(Float(bufferSize)))
+                fftSetup = vDSP_DFT_zop_CreateSetup(nil, vDSP_Length(bufferSize), vDSP_DFT_Direction.FORWARD)
+            }
 
+            installTap(on: inputNode, format: format)
+            engine.prepare()
+        }
+    }
+
+    private func installTap(on inputNode: AVAudioInputNode, format: AVAudioFormat) {
         inputNode.removeTap(onBus: 0)
         inputNode.installTap(onBus: 0, bufferSize: UInt32(bufferSize), format: format) { [weak self] (buffer, time) in
             self?.processAudio(buffer: buffer)
         }
-
-        engine.prepare()
+        tapInstalled = true
     }
 
     private func processAudio(buffer: AVAudioPCMBuffer) {

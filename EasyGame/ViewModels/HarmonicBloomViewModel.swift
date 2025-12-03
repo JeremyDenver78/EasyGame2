@@ -59,5 +59,6 @@ class HarmonicBloomViewModel: ObservableObject {
 
     func stopAudio() {
         audioProcessor.stop()
+        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
     }
 }

@@ -13,7 +13,7 @@ class BubbleGameAudioEngine {
     private var mainMixer: AVAudioMixerNode?
     private var dronePlayer: AVAudioPlayerNode?
     private var collisionPlayer: AVAudioPlayerNode?
-    private var reverb: AVAudioUnitReverb?
+    private let audioQueue = DispatchQueue(label: "com.antigravity.bubbleAudioQueue")
 
     private var isPlaying = false
 
@@ -33,44 +33,35 @@ class BubbleGameAudioEngine {
     // MARK: - Lifecycle Management
 
     private func createEngine() {
-        // 1. Create fresh instances
+        // Always rebuild a fresh engine to avoid stale graphs
         let newEngine = AVAudioEngine()
         let newDrone = AVAudioPlayerNode()
         let newCollision = AVAudioPlayerNode()
-        let newReverb = AVAudioUnitReverb()
         let newMixer = newEngine.mainMixerNode // Singleton accessor
+        let format = newEngine.outputNode.inputFormat(forBus: 0)
 
-        // 2. Configure Nodes
-        newReverb.loadFactoryPreset(.mediumHall)
-        newReverb.wetDryMix = 30
-
-        // 3. Attach
+        // Attach
         newEngine.attach(newDrone)
         newEngine.attach(newCollision)
-        newEngine.attach(newReverb)
 
-        // 4. Connect
-        // Use standard format. If this fails, we catch it in start()
-        if let format = AVAudioFormat(standardFormatWithSampleRate: 44100.0, channels: 2) {
-            newEngine.connect(newDrone, to: newReverb, format: format)
-            newEngine.connect(newCollision, to: newReverb, format: format)
-            newEngine.connect(newReverb, to: newMixer, format: format)
+        // Connect directly to mixer/output to avoid graph complexity
+        newEngine.connect(newDrone, to: newMixer, format: format)
+        newEngine.connect(newCollision, to: newMixer, format: format)
+        newEngine.connect(newMixer, to: newEngine.outputNode, format: format)
 
-            // Connect mixer to output with nil format (hardware handling)
-            newEngine.connect(newMixer, to: newEngine.outputNode, format: nil)
-        }
-
-        // 5. Assign to properties
+        // Assign
         self.engine = newEngine
-        self.mainMixer = newMixer
         self.dronePlayer = newDrone
         self.collisionPlayer = newCollision
-        self.reverb = newReverb
+        self.mainMixer = newMixer
 
+        newEngine.prepare()
         print("✓ Bubble Audio Engine Created (Fresh)")
     }
 
     private func tearDownEngine() {
+        isPlaying = false
+
         if let engine = engine {
             if engine.isRunning { engine.stop() }
         }
@@ -78,7 +69,6 @@ class BubbleGameAudioEngine {
         // Release strong references to let ARC clean up
         dronePlayer = nil
         collisionPlayer = nil
-        reverb = nil
         mainMixer = nil
         engine = nil
 
@@ -88,53 +78,84 @@ class BubbleGameAudioEngine {
     // MARK: - Public Controls
 
     func startAmbientDrone() {
-        guard !isPlaying else { return }
+        audioQueue.async { [weak self] in
+            guard let self = self else { return }
+            guard !self.isPlaying else { return }
 
-        // 1. Ensure clean slate
-        tearDownEngine()
-        setupAudioSession()
-        createEngine()
+            // Always reactivate the session first
+            self.setupAudioSession()
 
-        guard let engine = engine, let dronePlayer = dronePlayer else { return }
+            // Rebuild engine fresh for this start
+            self.tearDownEngine()
+            self.createEngine()
 
-        // 2. Generate Buffer
-        guard let droneBuffer = generateAmbientDrone(duration: 10.0) else { return }
+            guard let engine = self.engine,
+                  let dronePlayer = self.dronePlayer else { return }
 
-        // 3. Schedule
-        dronePlayer.scheduleBuffer(droneBuffer, at: nil, options: .loops, completionHandler: nil)
+            guard let droneBuffer = self.generateAmbientDrone(duration: 10.0) else { return }
 
-        // 4. Start
-        do {
-            try engine.start()
+            // Ensure the engine is running before scheduling
+            do {
+                if !engine.isRunning {
+                    try engine.start()
+                }
+            } catch {
+                print("❌ Failed to start Bubble Engine: \(error)")
+                return
+            }
+
+            // Ensure player is still attached (defensive)
+            if dronePlayer.engine == nil {
+                engine.attach(dronePlayer)
+                let format = engine.mainMixerNode.outputFormat(forBus: 0)
+                engine.connect(dronePlayer, to: engine.mainMixerNode, format: format)
+            }
+
+            // Reset and schedule
+            dronePlayer.stop()
+            dronePlayer.reset()
+            dronePlayer.scheduleBuffer(droneBuffer, at: nil, options: .loops, completionHandler: nil)
+
             dronePlayer.volume = 0.15
             dronePlayer.play()
-            isPlaying = true
+            self.isPlaying = true
             print("✓ Bubble Audio Playing")
-        } catch {
-            print("❌ Failed to start Bubble Engine: \(error)")
-            // If start fails, cleanup immediately
-            tearDownEngine()
-            isPlaying = false
         }
     }
 
     func stopAmbientDrone() {
-        isPlaying = false
-        // Completely destroy the engine when leaving the game
-        tearDownEngine()
+        audioQueue.async { [weak self] in
+            guard let self = self else { return }
+            self.isPlaying = false
+            self.dronePlayer?.stop()
+            self.tearDownEngine()
+        }
     }
 
     func playCollisionSound() {
-        // Guard against calling play on a nil or non-running engine
-        guard let engine = engine, engine.isRunning, let collisionPlayer = collisionPlayer else { return }
+        audioQueue.async { [weak self] in
+            guard let self = self else { return }
+            guard let engine = self.engine,
+                  let collisionPlayer = self.collisionPlayer else { return }
 
-        guard let collisionBuffer = generateSoftThud(frequency: 180.0, duration: 0.4) else { return }
+            guard let collisionBuffer = self.generateSoftThud(frequency: 180.0, duration: 0.4) else { return }
 
-        collisionPlayer.scheduleBuffer(collisionBuffer, at: nil, options: [], completionHandler: nil)
-        collisionPlayer.volume = 0.25
+            if !engine.isRunning {
+                try? engine.start()
+            }
 
-        if !collisionPlayer.isPlaying {
-            collisionPlayer.play()
+            if collisionPlayer.engine == nil {
+                engine.attach(collisionPlayer)
+                let format = engine.mainMixerNode.outputFormat(forBus: 0)
+                engine.connect(collisionPlayer, to: engine.mainMixerNode, format: format)
+            }
+
+            collisionPlayer.scheduleBuffer(collisionBuffer, at: nil, options: [], completionHandler: nil)
+            collisionPlayer.volume = 0.25
+
+            if !collisionPlayer.isPlaying {
+                collisionPlayer.play()
+            }
         }
     }
 

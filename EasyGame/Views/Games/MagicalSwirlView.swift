@@ -5,15 +5,9 @@ struct MagicalSwirlView: View {
     @StateObject private var viewModel = MagicalSwirlViewModel()
     @State private var showSettings = false
     @State private var showInstructions = true
+    @State private var scene: MagicalSwirlScene?
     @Environment(\.dismiss) private var dismiss
 
-    // Create scene once
-    @State private var scene: MagicalSwirlScene = {
-        let scene = MagicalSwirlScene()
-        scene.scaleMode = .resizeFill
-        return scene
-    }()
-    
     var body: some View {
         ZStack {
             // Background
@@ -27,21 +21,12 @@ struct MagicalSwirlView: View {
                 endPoint: .bottomTrailing
             )
             .ignoresSafeArea()
-            
+
             // Main Game Canvas
-            SpriteView(scene: scene, options: [.allowsTransparency])
-                .ignoresSafeArea()
-                .onAppear {
-                    // Ensure scene gets the viewModel reference
-                    DispatchQueue.main.async {
-                        scene.viewModel = viewModel
-                    }
-                }
-                .onChange(of: viewModel.fadeSpeed) { _ in updateScene() }
-                .onChange(of: viewModel.trailThickness) { _ in updateScene() }
-                .onChange(of: viewModel.glowStrength) { _ in updateScene() }
-                .onChange(of: viewModel.colorMode) { _ in updateScene() }
-                .onChange(of: viewModel.styleMode) { _ in updateScene() }
+            if let scene = scene {
+                SpriteView(scene: scene, options: [.allowsTransparency])
+                    .ignoresSafeArea()
+            }
 
             // Instructions Overlay
             if showInstructions {
@@ -98,7 +83,7 @@ struct MagicalSwirlView: View {
                 }
                 .transition(.scale.combined(with: .opacity))
             }
-            
+
             // Top Bar with Back Button and Title
             VStack {
                 HStack {
@@ -159,7 +144,7 @@ struct MagicalSwirlView: View {
                     .padding()
                 }
             }
-            
+
             // Settings Overlay
             if showSettings {
                 Color.black.opacity(0.6)
@@ -169,36 +154,36 @@ struct MagicalSwirlView: View {
                             showSettings = false
                         }
                     }
-                
+
                 VStack(spacing: 20) {
                     Text("Settings")
                         .font(.title2)
                         .fontWeight(.bold)
                         .foregroundColor(.white)
-                    
+
                     ScrollView {
                         VStack(spacing: 24) {
                             // Fade Speed
                             VStack(alignment: .leading) {
-                                Text("Fade Speed: \(Int(viewModel.fadeSpeed))s")
+                                Text("Fade Speed: \(String(format: "%.1f", viewModel.fadeSpeed))s")
                                     .foregroundColor(.white)
                                 Slider(value: $viewModel.fadeSpeed, in: 0.5...15.0)
                             }
-                            
+
                             // Trail Thickness
                             VStack(alignment: .leading) {
-                                Text("Trail Thickness: \(Int(viewModel.trailThickness))")
+                                Text("Trail Thickness: \(String(format: "%.1f", viewModel.trailThickness))")
                                     .foregroundColor(.white)
                                 Slider(value: $viewModel.trailThickness, in: 1.0...10.0)
                             }
-                            
+
                             // Glow Strength
                             VStack(alignment: .leading) {
                                 Text("Glow Strength: \(Int(viewModel.glowStrength * 100))%")
                                     .foregroundColor(.white)
                                 Slider(value: $viewModel.glowStrength, in: 0.0...1.0)
                             }
-                            
+
                             // Color Mode
                             VStack(alignment: .leading) {
                                 Text("Color Mode")
@@ -210,7 +195,7 @@ struct MagicalSwirlView: View {
                                 }
                                 .pickerStyle(SegmentedPickerStyle())
                             }
-                            
+
                             // Style Mode
                             VStack(alignment: .leading) {
                                 Text("Style Mode")
@@ -225,14 +210,14 @@ struct MagicalSwirlView: View {
                                 .background(Color.white.opacity(0.2))
                                 .cornerRadius(8)
                             }
-                            
+
                             // Haptics Toggle
                             Toggle("Haptics", isOn: $viewModel.isHapticsEnabled)
                                 .foregroundColor(.white)
-                            
+
                             // Volume
                             VStack(alignment: .leading) {
-                                Text("Volume")
+                                Text("Volume: \(Int(viewModel.volume * 100))%")
                                     .foregroundColor(.white)
                                 Slider(value: $viewModel.volume, in: 0.0...1.0)
                             }
@@ -240,7 +225,7 @@ struct MagicalSwirlView: View {
                         .padding()
                     }
                     .frame(maxHeight: 400)
-                    
+
                     Button("Close") {
                         withAnimation {
                             showSettings = false
@@ -258,14 +243,15 @@ struct MagicalSwirlView: View {
             }
         }
         .navigationBarBackButtonHidden(true)
+        .onAppear {
+            setupScene()
+        }
     }
-    
-    private func updateScene() {
-        // Trigger any necessary updates in the scene
-        // Since the scene holds a reference to the viewModel, it can read the new values directly
-        // when creating new trails.
-        // If we wanted to update existing trails, we'd need a method in the scene.
-        scene.viewModel = viewModel
+
+    private func setupScene() {
+        let newScene = MagicalSwirlScene()
+        newScene.scaleMode = .resizeFill
+        newScene.viewModel = viewModel
+        self.scene = newScene
     }
 }
-

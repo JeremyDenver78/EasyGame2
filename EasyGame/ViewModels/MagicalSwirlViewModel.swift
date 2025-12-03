@@ -8,74 +8,83 @@ class SwirlAudioEngine {
     private let engine = AVAudioEngine()
     private let mainMixer: AVAudioMixerNode
     private let reverb = AVAudioUnitReverb()
-    
+
     // Nodes for different sounds
     private let touchPlayer = AVAudioPlayerNode()
     private let movePlayer = AVAudioPlayerNode()
     private let fadePlayer = AVAudioPlayerNode()
-    
+
+    private var isRunning = false
+
     init() {
         mainMixer = engine.mainMixerNode
-        
+
         // Setup Reverb
         reverb.loadFactoryPreset(.mediumHall)
         reverb.wetDryMix = 40
-        
+
         engine.attach(reverb)
         engine.connect(reverb, to: mainMixer, format: nil)
-        
+
         // Setup Players
         setupPlayer(touchPlayer)
         setupPlayer(movePlayer)
         setupPlayer(fadePlayer)
-        
+    }
+
+    func start() {
+        guard !isRunning else { return }
         do {
             try engine.start()
+            isRunning = true
         } catch {
             print("Audio Engine Error: \(error)")
         }
     }
-    
+
     private func setupPlayer(_ player: AVAudioPlayerNode) {
         engine.attach(player)
         let format = engine.outputNode.inputFormat(forBus: 0)
         engine.connect(player, to: reverb, format: format)
     }
-    
+
     func playTouchSound(volume: Double) {
+        guard isRunning else { return }
         let buffer = generateSineWave(frequency: 440.0, duration: 0.3)
         touchPlayer.scheduleBuffer(buffer, at: nil, options: [], completionHandler: nil)
         touchPlayer.volume = Float(volume)
-        touchPlayer.play()
+        if !touchPlayer.isPlaying {
+            touchPlayer.play()
+        }
     }
-    
+
     func playMoveSound(speed: Double, volume: Double) {
-        // Continuous whoosh based on speed
-        // For simplicity, we'll just play a short noise burst if not already playing or loop it
-        // Generating noise on the fly is a bit heavy, let's skip continuous synthesis for now
-        // and just play a low tone that pitches up with speed
-        
+        guard isRunning else { return }
+
         if !movePlayer.isPlaying {
             let buffer = generateNoise(duration: 1.0)
             movePlayer.scheduleBuffer(buffer, at: nil, options: .loops, completionHandler: nil)
             movePlayer.play()
         }
-        
+
         movePlayer.volume = Float(min(1.0, speed / 1000.0) * volume * 0.5)
-        // Pitch shift could be done with AVAudioUnitTimePitch if attached
     }
-    
+
     func stopMoveSound() {
+        guard isRunning else { return }
         movePlayer.stop()
     }
-    
+
     func playFadeSound(volume: Double) {
+        guard isRunning else { return }
         let buffer = generateSineWave(frequency: 880.0, duration: 0.5)
         fadePlayer.scheduleBuffer(buffer, at: nil, options: [], completionHandler: nil)
         fadePlayer.volume = Float(volume * 0.3)
-        fadePlayer.play()
+        if !fadePlayer.isPlaying {
+            fadePlayer.play()
+        }
     }
-    
+
     // Generators
     private func generateSineWave(frequency: Double, duration: Double) -> AVAudioPCMBuffer {
         let sampleRate = 44100.0
@@ -83,33 +92,33 @@ class SwirlAudioEngine {
         let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 1)!
         let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount)!
         buffer.frameLength = frameCount
-        
+
         let channels = buffer.floatChannelData!
         let data = channels[0]
-        
+
         for i in 0..<Int(frameCount) {
             let t = Double(i) / sampleRate
             let envelope = 1.0 - (t / duration) // Simple decay
             data[i] = Float(sin(2.0 * .pi * frequency * t) * envelope)
         }
-        
+
         return buffer
     }
-    
+
     private func generateNoise(duration: Double) -> AVAudioPCMBuffer {
         let sampleRate = 44100.0
         let frameCount = AVAudioFrameCount(sampleRate * duration)
         let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 1)!
         let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount)!
         buffer.frameLength = frameCount
-        
+
         let channels = buffer.floatChannelData!
         let data = channels[0]
-        
+
         for i in 0..<Int(frameCount) {
             data[i] = Float.random(in: -0.5...0.5)
         }
-        
+
         return buffer
     }
 }
@@ -123,7 +132,7 @@ class MagicalSwirlViewModel: ObservableObject {
     @Published var styleMode: StyleMode = .random
     @Published var isHapticsEnabled: Bool = true
     @Published var volume: Double = 0.5 // Range: 0.0 - 1.0
-    
+
     // MARK: - Enums
     enum ColorMode: String, CaseIterable, Identifiable {
         case random = "Random"
@@ -131,7 +140,7 @@ class MagicalSwirlViewModel: ObservableObject {
         case gradient = "Gradient"
         var id: String { self.rawValue }
     }
-    
+
     enum StyleMode: String, CaseIterable, Identifiable {
         case random = "Random"
         case mist = "Mist"
@@ -141,22 +150,23 @@ class MagicalSwirlViewModel: ObservableObject {
         case shimmer = "Shimmer"
         var id: String { self.rawValue }
     }
-    
+
     // MARK: - Audio & Haptics
-    private var audio: SwirlAudioEngine?
+    private lazy var audio: SwirlAudioEngine = {
+        let engine = SwirlAudioEngine()
+        // Start audio engine on background thread to avoid blocking
+        DispatchQueue.global(qos: .userInitiated).async {
+            engine.start()
+        }
+        return engine
+    }()
+
     private var hapticEngine: CHHapticEngine?
 
     init() {
-        // Initialize audio asynchronously to avoid blocking main thread
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            let audioEngine = SwirlAudioEngine()
-            DispatchQueue.main.async {
-                self?.audio = audioEngine
-            }
-        }
         setupHaptics()
     }
-    
+
     private func setupHaptics() {
         guard CHHapticEngine.capabilitiesForHardware().supportsHaptics else { return }
         do {
@@ -166,39 +176,39 @@ class MagicalSwirlViewModel: ObservableObject {
             print("Haptic Error: \(error)")
         }
     }
-    
+
     func playTouchSound() {
-        audio?.playTouchSound(volume: volume)
+        audio.playTouchSound(volume: volume)
     }
 
     func playMoveSound(speed: Double) {
-        audio?.playMoveSound(speed: speed, volume: volume)
+        audio.playMoveSound(speed: speed, volume: volume)
     }
 
     func stopMoveSound() {
-        audio?.stopMoveSound()
+        audio.stopMoveSound()
     }
 
     func playFadeSound() {
-        audio?.playFadeSound(volume: volume)
+        audio.playFadeSound(volume: volume)
     }
-    
+
     // MARK: - Haptics
     func triggerHaptic(style: UIImpactFeedbackGenerator.FeedbackStyle) {
         guard isHapticsEnabled else { return }
         let generator = UIImpactFeedbackGenerator(style: style)
         generator.impactOccurred()
     }
-    
+
     func triggerContinuousHaptic(intensity: Double) {
         guard isHapticsEnabled, let engine = hapticEngine else { return }
-        
+
         // Create a continuous haptic event
         let intensityParam = CHHapticEventParameter(parameterID: .hapticIntensity, value: Float(intensity))
         let sharpnessParam = CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.5)
-        
+
         let event = CHHapticEvent(eventType: .hapticContinuous, parameters: [intensityParam, sharpnessParam], relativeTime: 0, duration: 0.1)
-        
+
         do {
             let pattern = try CHHapticPattern(events: [event], parameters: [])
             let player = try engine.makePlayer(with: pattern)

@@ -14,10 +14,17 @@ class SwirlAudioEngine {
     private let movePlayer = AVAudioPlayerNode()
     private let fadePlayer = AVAudioPlayerNode()
 
-    private var isRunning = false
-
     init() {
         mainMixer = engine.mainMixerNode
+
+        // CRITICAL: Configure AVAudioSession to mix with other audio (music, system sounds)
+        // This prevents the "muffled/doubled" audio bug
+        do {
+            try AVAudioSession.sharedInstance().setCategory(.ambient, options: [.mixWithOthers])
+            try AVAudioSession.sharedInstance().setActive(true)
+        } catch {
+            print("Audio Session Error: \(error)")
+        }
 
         // Setup Reverb
         reverb.loadFactoryPreset(.mediumHall)
@@ -30,13 +37,10 @@ class SwirlAudioEngine {
         setupPlayer(touchPlayer)
         setupPlayer(movePlayer)
         setupPlayer(fadePlayer)
-    }
 
-    func start() {
-        guard !isRunning else { return }
+        // Start engine synchronously - it's safe and fast
         do {
             try engine.start()
-            isRunning = true
         } catch {
             print("Audio Engine Error: \(error)")
         }
@@ -50,7 +54,13 @@ class SwirlAudioEngine {
     }
 
     func playTouchSound(volume: Double) {
-        guard isRunning else { return }
+        // Guard: ensure engine is running before scheduling buffer
+        if !engine.isRunning {
+            try? engine.start()
+        }
+
+        guard engine.isRunning else { return }
+
         let buffer = generateSineWave(frequency: 440.0, duration: 0.3)
         touchPlayer.scheduleBuffer(buffer, at: nil, options: [], completionHandler: nil)
         touchPlayer.volume = Float(volume)
@@ -60,7 +70,12 @@ class SwirlAudioEngine {
     }
 
     func playMoveSound(speed: Double, volume: Double) {
-        guard isRunning else { return }
+        // Guard: ensure engine is running before scheduling buffer
+        if !engine.isRunning {
+            try? engine.start()
+        }
+
+        guard engine.isRunning else { return }
 
         if !movePlayer.isPlaying {
             let buffer = generateNoise(duration: 1.0)
@@ -72,12 +87,18 @@ class SwirlAudioEngine {
     }
 
     func stopMoveSound() {
-        guard isRunning else { return }
+        guard engine.isRunning else { return }
         movePlayer.stop()
     }
 
     func playFadeSound(volume: Double) {
-        guard isRunning else { return }
+        // Guard: ensure engine is running before scheduling buffer
+        if !engine.isRunning {
+            try? engine.start()
+        }
+
+        guard engine.isRunning else { return }
+
         let buffer = generateSineWave(frequency: 880.0, duration: 0.5)
         fadePlayer.scheduleBuffer(buffer, at: nil, options: [], completionHandler: nil)
         fadePlayer.volume = Float(volume * 0.3)
@@ -159,13 +180,9 @@ class MagicalSwirlViewModel: ObservableObject {
     }
 
     // MARK: - Audio & Haptics
+    // Lazy initialization - created on first access, already started and ready to use
     private lazy var audio: SwirlAudioEngine = {
-        let engine = SwirlAudioEngine()
-        // Start audio engine on background thread to avoid blocking
-        DispatchQueue.global(qos: .userInitiated).async {
-            engine.start()
-        }
-        return engine
+        return SwirlAudioEngine()
     }()
 
     private var hapticEngine: CHHapticEngine?

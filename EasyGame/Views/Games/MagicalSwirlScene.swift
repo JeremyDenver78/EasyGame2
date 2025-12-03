@@ -10,6 +10,7 @@ class MagicalSwirlScene: SKScene {
     private var lastTouchPositions: [UITouch: (point: CGPoint, time: TimeInterval)] = [:]
 
     // MARK: - Texture Cache (Critical for Performance)
+    // Textures are generated ONCE and reused for all emitters
     private var textureCache: [String: SKTexture] = [:]
 
     // MARK: - Lifecycle
@@ -19,15 +20,15 @@ class MagicalSwirlScene: SKScene {
         view.allowsTransparency = true
         view.isMultipleTouchEnabled = true
 
-        // Pre-generate and cache all textures
+        // Pre-generate and cache all textures ONCE
         initializeTextureCache()
     }
 
     private func initializeTextureCache() {
-        // Generate standard particle texture
+        // Generate standard particle texture (sharp gradient)
         textureCache["standard"] = createParticleTexture()
 
-        // Generate soft/mist texture
+        // Generate soft/mist texture (diffuse cloud)
         textureCache["soft"] = createSoftTexture()
 
         print("✓ Texture cache initialized with \(textureCache.count) textures")
@@ -108,19 +109,21 @@ class MagicalSwirlScene: SKScene {
 
         for touch in touches {
             if let emitter = activeTrails[touch] {
-                // Stop emitting new particles immediately
+                // CRITICAL: Stop emitting new particles immediately
+                // BUT keep existing particles alive to fade naturally
                 emitter.particleBirthRate = 0
 
-                // Remove tracking
+                // Remove from active tracking
                 activeTrails.removeValue(forKey: touch)
                 lastTouchPositions.removeValue(forKey: touch)
                 touchVelocities.removeValue(forKey: touch)
 
                 // Calculate fade-out duration based on particle lifetime
-                // Particles will continue to exist and fade according to their lifetime
+                // Particles will continue to exist and fade according to their lifetime settings
                 let lifetime = TimeInterval(emitter.particleLifetime + emitter.particleLifetimeRange / 2)
 
-                // Schedule cleanup after all particles have died
+                // Schedule cleanup AFTER all particles have naturally died
+                // This creates the "lingering trail" effect based on fadeSpeed setting
                 let cleanupAction = SKAction.sequence([
                     SKAction.wait(forDuration: lifetime),
                     SKAction.removeFromParent()
@@ -143,7 +146,7 @@ class MagicalSwirlScene: SKScene {
         emitter.position = position
         emitter.targetNode = self
 
-        // Configure based on current settings
+        // Configure based on current settings from ViewModel
         configureEmitter(emitter, with: viewModel)
 
         addChild(emitter)
@@ -152,9 +155,11 @@ class MagicalSwirlScene: SKScene {
 
     private func configureEmitter(_ emitter: SKEmitterNode, with viewModel: MagicalSwirlViewModel) {
         // Get the appropriate style mode (handle random)
-        let actualStyle = viewModel.styleMode == .random ? MagicalSwirlViewModel.StyleMode.allCases.filter { $0 != .random }.randomElement() ?? .mist : viewModel.styleMode
+        let actualStyle = viewModel.styleMode == .random
+            ? MagicalSwirlViewModel.StyleMode.allCases.filter { $0 != .random }.randomElement() ?? .mist
+            : viewModel.styleMode
 
-        // Select texture based on style
+        // Select texture from cache based on style (NO generation here!)
         let textureKey: String
         switch actualStyle {
         case .mist, .ink, .dust:
@@ -163,6 +168,7 @@ class MagicalSwirlScene: SKScene {
             textureKey = "standard"
         }
 
+        // Use cached texture - this is critical for performance
         emitter.particleTexture = textureCache[textureKey] ?? textureCache["standard"]
 
         // Basic particle settings (responsive to fadeSpeed and trailThickness)

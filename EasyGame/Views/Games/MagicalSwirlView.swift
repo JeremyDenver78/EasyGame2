@@ -244,11 +244,13 @@ struct MagicalSwirlView: View {
         }
         .navigationBarBackButtonHidden(true)
         .onAppear {
+            // Setup scene on main thread, but don't block
             setupScene()
         }
     }
 
     private func setupScene() {
+        // Create and configure scene
         let newScene = MagicalSwirlScene()
         newScene.scaleMode = .resizeFill
         newScene.viewModel = viewModel

@@ -15,11 +15,12 @@ class BubbleGameAudioEngine {
     private let reverb = AVAudioUnitReverb()
 
     private var isPlaying = false
+    private var isInitialized = false
 
     private init() {
         mainMixer = engine.mainMixerNode
         setupAudioSession()
-        setupAudioGraph()
+        // Defer graph setup until first use to avoid conflicts
     }
 
     private func setupAudioSession() {
@@ -32,25 +33,36 @@ class BubbleGameAudioEngine {
         }
     }
 
-    private func setupAudioGraph() {
-        // Setup reverb for spacious ambient feel
-        reverb.loadFactoryPreset(.mediumHall)
-        reverb.wetDryMix = 30
+    // MARK: - Graph Management
 
-        // Attach nodes
-        engine.attach(dronePlayer)
-        engine.attach(collisionPlayer)
-        engine.attach(reverb)
+    private func rebuildGraph() {
+        // 1. Ensure nodes are attached (safe to call even if already attached)
+        if dronePlayer.engine == nil { engine.attach(dronePlayer) }
+        if collisionPlayer.engine == nil { engine.attach(collisionPlayer) }
+        if reverb.engine == nil { engine.attach(reverb) }
 
-        // Connect graph: Players -> Reverb -> MainMixer -> Output
-        let format = AVAudioFormat(standardFormatWithSampleRate: 44100.0, channels: 2)!
+        // 2. Define internal processing format (44.1kHz stereo)
+        guard let format = AVAudioFormat(standardFormatWithSampleRate: 44100.0, channels: 2) else {
+            print("❌ Failed to create audio format")
+            return
+        }
 
+        // 3. Connect Nodes
+        // Note: engine.connect re-establishes connections if they were broken
         engine.connect(dronePlayer, to: reverb, format: format)
         engine.connect(collisionPlayer, to: reverb, format: format)
         engine.connect(reverb, to: mainMixer, format: format)
-        engine.connect(mainMixer, to: engine.outputNode, format: format)
 
-        print("✓ Bubble Audio Graph initialized")
+        // 4. Connect to Output
+        // CRITICAL FIX: Use nil format to allow engine to handle hardware sample rate mixing (e.g. 48k output)
+        engine.connect(mainMixer, to: engine.outputNode, format: nil)
+
+        // 5. Configure Reverb
+        reverb.loadFactoryPreset(.mediumHall)
+        reverb.wetDryMix = 30
+
+        isInitialized = true
+        print("✓ Bubble audio graph initialized")
     }
 
     // MARK: - Background Ambient Drone
@@ -58,28 +70,42 @@ class BubbleGameAudioEngine {
     func startAmbientDrone() {
         guard !isPlaying else { return }
 
-        // Generate Indian-style ambient drone
-        let droneBuffer = generateAmbientDrone(duration: 10.0)
+        do {
+            // CRITICAL FIX: Ensure graph is valid before starting.
+            // Other audio engines in the app might have invalidated this graph.
+            rebuildGraph()
 
-        // Schedule and loop
-        dronePlayer.scheduleBuffer(droneBuffer, at: nil, options: .loops, completionHandler: nil)
-
-        // Start engine and player
-        if !engine.isRunning {
-            do {
-                try engine.start()
-                print("✓ Bubble Audio Engine started")
-            } catch {
-                print("❌ Failed to start engine: \(error)")
+            guard isInitialized else {
+                print("❌ Audio graph not initialized")
                 return
             }
+
+            // Generate buffer if needed (buffer generation is fast enough to do here or cache)
+            guard let droneBuffer = generateAmbientDrone(duration: 10.0) else {
+                print("❌ Failed to generate drone buffer")
+                return
+            }
+
+            // Schedule and loop
+            if !dronePlayer.isPlaying {
+                dronePlayer.scheduleBuffer(droneBuffer, at: nil, options: .loops, completionHandler: nil)
+            }
+
+            // Start engine
+            if !engine.isRunning {
+                try engine.start()
+                print("✓ Bubble Audio Engine started")
+            }
+
+            dronePlayer.volume = 0.15
+            dronePlayer.play()
+            isPlaying = true
+
+            print("✓ Ambient drone started")
+        } catch {
+            print("❌ Failed to start ambient drone: \(error)")
+            isPlaying = false
         }
-
-        dronePlayer.volume = 0.15 // Very soft, calming volume
-        dronePlayer.play()
-        isPlaying = true
-
-        print("✓ Ambient drone started")
     }
 
     func stopAmbientDrone() {
@@ -88,62 +114,89 @@ class BubbleGameAudioEngine {
         dronePlayer.stop()
         isPlaying = false
 
+        // Optional: Pause engine to save resources, but keep graph intact
+        engine.pause()
+
         print("✓ Ambient drone stopped")
     }
 
     // MARK: - Collision Sound
 
     func playCollisionSound() {
-        guard engine.isRunning else { return }
+        do {
+            // Safety check: ensure player is connected
+            if collisionPlayer.engine == nil {
+                rebuildGraph()
+            }
 
-        // Generate soft, gentle thud
-        let collisionBuffer = generateSoftThud(frequency: 180.0, duration: 0.4)
+            guard isInitialized else {
+                print("❌ Cannot play collision: audio graph not initialized")
+                return
+            }
 
-        collisionPlayer.scheduleBuffer(collisionBuffer, at: nil, options: [], completionHandler: nil)
-        collisionPlayer.volume = 0.25
+            // Ensure engine is running
+            if !engine.isRunning {
+                try engine.start()
+            }
 
-        if !collisionPlayer.isPlaying {
-            collisionPlayer.play()
+            guard let collisionBuffer = generateSoftThud(frequency: 180.0, duration: 0.4) else {
+                print("❌ Failed to generate collision buffer")
+                return
+            }
+
+            collisionPlayer.scheduleBuffer(collisionBuffer, at: nil, options: [], completionHandler: nil)
+            collisionPlayer.volume = 0.25
+
+            if !collisionPlayer.isPlaying {
+                collisionPlayer.play()
+            }
+        } catch {
+            print("❌ Failed to play collision sound: \(error)")
         }
     }
 
     // MARK: - Audio Generation
 
-    private func generateAmbientDrone(duration: Double) -> AVAudioPCMBuffer {
+    private func generateAmbientDrone(duration: Double) -> AVAudioPCMBuffer? {
+        guard let format = AVAudioFormat(standardFormatWithSampleRate: 44100.0, channels: 2) else {
+            print("❌ Failed to create drone format")
+            return nil
+        }
+
         let sampleRate = 44100.0
         let frameCount = AVAudioFrameCount(sampleRate * duration)
-        let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 2)!
-        let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount)!
+
+        guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount) else {
+            print("❌ Failed to create drone buffer")
+            return nil
+        }
         buffer.frameLength = frameCount
 
-        let channels = buffer.floatChannelData!
+        guard let channels = buffer.floatChannelData else {
+            print("❌ Failed to get drone channel data")
+            return nil
+        }
 
-        // Indian-style drone frequencies (Shruti box inspiration)
-        let baseFreq = 110.0 // A2 - grounding base note
-        let fifthFreq = 165.0 // E3 - perfect fifth above
-        let octaveFreq = 220.0 // A3 - octave above base
+        let baseFreq = 110.0 // A2
+        let fifthFreq = 165.0 // E3
+        let octaveFreq = 220.0 // A3
 
         for i in 0..<Int(frameCount) {
             let t = Double(i) / sampleRate
 
-            // Layer 1: Base drone with subtle FM
-            let fmMod1 = sin(2.0 * .pi * 0.3 * t) * 0.5 // Very slow modulation
+            let fmMod1 = sin(2.0 * .pi * 0.3 * t) * 0.5
             let base = sin(2.0 * .pi * baseFreq * t + fmMod1)
 
-            // Layer 2: Perfect fifth
             let fmMod2 = sin(2.0 * .pi * 0.2 * t) * 0.3
             let fifth = sin(2.0 * .pi * fifthFreq * t + fmMod2)
 
-            // Layer 3: Octave overtone
             let fmMod3 = sin(2.0 * .pi * 0.25 * t) * 0.4
             let octave = sin(2.0 * .pi * octaveFreq * t + fmMod3)
 
-            // Mix layers with balanced volumes
             let mixed = (base * 0.5) + (fifth * 0.3) + (octave * 0.2)
 
-            // Seamless loop envelope
             let loopEnvelope: Double
-            let fadeLength = 0.5 // 500ms crossfade
+            let fadeLength = 0.5
             if t < fadeLength {
                 loopEnvelope = t / fadeLength
             } else if t > (duration - fadeLength) {
@@ -152,38 +205,43 @@ class BubbleGameAudioEngine {
                 loopEnvelope = 1.0
             }
 
-            let finalSample = Float(mixed * loopEnvelope * 0.4) // Soft master volume
-            channels[0][i] = finalSample // Left
-            channels[1][i] = finalSample // Right
+            let finalSample = Float(mixed * loopEnvelope * 0.4)
+            channels[0][i] = finalSample
+            channels[1][i] = finalSample
         }
 
         return buffer
     }
 
-    private func generateSoftThud(frequency: Double, duration: Double) -> AVAudioPCMBuffer {
+    private func generateSoftThud(frequency: Double, duration: Double) -> AVAudioPCMBuffer? {
+        guard let format = AVAudioFormat(standardFormatWithSampleRate: 44100.0, channels: 2) else {
+            print("❌ Failed to create thud format")
+            return nil
+        }
+
         let sampleRate = 44100.0
         let frameCount = AVAudioFrameCount(sampleRate * duration)
-        let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 2)!
-        let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount)!
+
+        guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount) else {
+            print("❌ Failed to create thud buffer")
+            return nil
+        }
         buffer.frameLength = frameCount
 
-        let channels = buffer.floatChannelData!
+        guard let channels = buffer.floatChannelData else {
+            print("❌ Failed to get thud channel data")
+            return nil
+        }
 
         for i in 0..<Int(frameCount) {
             let t = Double(i) / sampleRate
-
-            // Soft thud: Low sine with fast exponential decay
-            let envelope = exp(-8.0 * t) // Quick decay
-
-            // Mix low frequency with slight harmonics for warmth
+            let envelope = exp(-8.0 * t)
             let fundamental = sin(2.0 * .pi * frequency * t)
             let harmonic = sin(2.0 * .pi * frequency * 2.0 * t) * 0.3
-
             let sample = (fundamental + harmonic) * envelope
-
-            let finalSample = Float(sample * 0.5) // Gentle volume
-            channels[0][i] = finalSample // Left
-            channels[1][i] = finalSample // Right
+            let finalSample = Float(sample * 0.5)
+            channels[0][i] = finalSample
+            channels[1][i] = finalSample
         }
 
         return buffer

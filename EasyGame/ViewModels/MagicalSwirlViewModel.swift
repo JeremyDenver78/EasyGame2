@@ -44,7 +44,8 @@ class SwirlAudioEngine {
 
     private func setupPlayer(_ player: AVAudioPlayerNode) {
         engine.attach(player)
-        let format = engine.outputNode.inputFormat(forBus: 0)
+        // Use a standard stereo format for all connections
+        let format = AVAudioFormat(standardFormatWithSampleRate: 44100.0, channels: 2)
         engine.connect(player, to: reverb, format: format)
     }
 
@@ -89,17 +90,20 @@ class SwirlAudioEngine {
     private func generateSineWave(frequency: Double, duration: Double) -> AVAudioPCMBuffer {
         let sampleRate = 44100.0
         let frameCount = AVAudioFrameCount(sampleRate * duration)
-        let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 1)!
+        // Use stereo format to match the audio engine setup
+        let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 2)!
         let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount)!
         buffer.frameLength = frameCount
 
         let channels = buffer.floatChannelData!
-        let data = channels[0]
 
+        // Generate for both channels (stereo)
         for i in 0..<Int(frameCount) {
             let t = Double(i) / sampleRate
             let envelope = 1.0 - (t / duration) // Simple decay
-            data[i] = Float(sin(2.0 * .pi * frequency * t) * envelope)
+            let sample = Float(sin(2.0 * .pi * frequency * t) * envelope)
+            channels[0][i] = sample // Left channel
+            channels[1][i] = sample // Right channel
         }
 
         return buffer
@@ -108,15 +112,18 @@ class SwirlAudioEngine {
     private func generateNoise(duration: Double) -> AVAudioPCMBuffer {
         let sampleRate = 44100.0
         let frameCount = AVAudioFrameCount(sampleRate * duration)
-        let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 1)!
+        // Use stereo format to match the audio engine setup
+        let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 2)!
         let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount)!
         buffer.frameLength = frameCount
 
         let channels = buffer.floatChannelData!
-        let data = channels[0]
 
+        // Generate noise for both channels (stereo)
         for i in 0..<Int(frameCount) {
-            data[i] = Float.random(in: -0.5...0.5)
+            let sample = Float.random(in: -0.5...0.5)
+            channels[0][i] = sample // Left channel
+            channels[1][i] = sample // Right channel
         }
 
         return buffer

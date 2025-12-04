@@ -8,7 +8,7 @@ enum GameType: String, CaseIterable, Identifiable {
     case shapesThatSing
     case magicalSwirl
     case harmonicBloom
-    case game5
+    case affirmationOrb
 
     var id: String { self.rawValue }
     
@@ -23,7 +23,7 @@ enum GameType: String, CaseIterable, Identifiable {
             return "Shapes That Sing"
         case .magicalSwirl: return "Magical Swirl"
         case .harmonicBloom: return "Harmonic Bloom"
-        case .game5: return "Coming Soon"
+        case .affirmationOrb: return "Affirmation Orb"
         }
     }
     
@@ -38,7 +38,7 @@ enum GameType: String, CaseIterable, Identifiable {
             return "Create a soothing ambient soundscape with floating shapes."
         case .magicalSwirl: return "Create soothing trails of light with your touch."
         case .harmonicBloom: return "Watch your environment bloom into light as you listen or speak."
-        case .game5: return "Coming Soon"
+        case .affirmationOrb: return "Find clarity in the chaos. Reveal a message of calm."
         }
     }
     
@@ -53,7 +53,7 @@ enum GameType: String, CaseIterable, Identifiable {
             return "music.quarternote.3"
         case .magicalSwirl: return "sparkles"
         case .harmonicBloom: return "waveform.circle"
-        case .game5: return "star"
+        case .affirmationOrb: return "sparkles.rectangle.stack"
         }
     }
     
@@ -65,7 +65,7 @@ enum GameType: String, CaseIterable, Identifiable {
         case .shapesThatSing: return [Color.dreamyPurple.opacity(0.6), Color.dreamyPurple]
         case .magicalSwirl: return [Color(red: 0.4, green: 0.2, blue: 0.6), Color(red: 0.6, green: 0.4, blue: 0.8)]
         case .harmonicBloom: return [Color(red: 0.2, green: 0.8, blue: 0.9), Color(red: 0.1, green: 0.4, blue: 0.8)]
-        case .game5: return [Color.gray, Color.gray.opacity(0.5)]
+        case .affirmationOrb: return [Color(red: 0.2, green: 0.8, blue: 0.9), Color(red: 0.6, green: 0.3, blue: 0.9)]
         }
     }
 
@@ -84,8 +84,8 @@ enum GameType: String, CaseIterable, Identifiable {
             MagicalSwirlView()
         case .harmonicBloom:
             HarmonicBloomView()
-        default:
-            Text("Coming Soon")
+        case .affirmationOrb:
+            AffirmationOrbView()
         }
     }
 }
@@ -93,5 +93,4 @@ enum GameType: String, CaseIterable, Identifiable {
 struct Game: Identifiable {
     let id = UUID()
     let type: GameType
-    var isComingSoon: Bool = false
 }

@@ -35,7 +35,6 @@ class AudioSpectrumProcessor: ObservableObject {
             let format = inputNode.outputFormat(forBus: 0)
 
             if fftSetup == nil {
-                let log2n = vDSP_Length(log2(Float(bufferSize)))
                 fftSetup = vDSP_DFT_zop_CreateSetup(nil, vDSP_Length(bufferSize), vDSP_DFT_Direction.FORWARD)
             }
 

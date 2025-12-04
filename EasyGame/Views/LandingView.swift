@@ -58,11 +58,11 @@ struct LandingView: View {
 
                         // Title text
                         VStack(spacing: 12) {
-                            Text("Anxiety Relief Games")
+                            Text("Mind Swirl")
                                 .font(.system(size: 32, weight: .semibold, design: .rounded))
                                 .foregroundColor(.softText)
 
-                            Text("Find your calm")
+                            Text("Anxiety Relief")
                                 .font(.system(size: 18, weight: .regular, design: .rounded))
                                 .foregroundColor(.lightText)
                         }

@@ -40,6 +40,11 @@
 		AAB9D0 /* AudioSpectrumProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA8F65 /* AudioSpectrumProcessor.swift */; };
 		AADFB1 /* HarmonicBloomScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA143C /* HarmonicBloomScene.swift */; };
 		AA9335 /* BubbleGameAudioEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA8DE8 /* BubbleGameAudioEngine.swift */; };
+		AAF101 /* AffirmationOrbModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAF100 /* AffirmationOrbModel.swift */; };
+		AAF103 /* AffirmationAudioEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAF102 /* AffirmationAudioEngine.swift */; };
+		AAF105 /* AffirmationOrbViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAF104 /* AffirmationOrbViewModel.swift */; };
+		AAF107 /* AffirmationOrbScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAF106 /* AffirmationOrbScene.swift */; };
+		AAF109 /* AffirmationOrbView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAF108 /* AffirmationOrbView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -77,6 +82,11 @@
 		AA8F65 /* AudioSpectrumProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioSpectrumProcessor.swift; sourceTree = "<group>"; };
 		AA143C /* HarmonicBloomScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HarmonicBloomScene.swift; sourceTree = "<group>"; };
 		AA8DE8 /* BubbleGameAudioEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BubbleGameAudioEngine.swift; sourceTree = "<group>"; };
+		AAF100 /* AffirmationOrbModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AffirmationOrbModel.swift; sourceTree = "<group>"; };
+		AAF102 /* AffirmationAudioEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AffirmationAudioEngine.swift; sourceTree = "<group>"; };
+		AAF104 /* AffirmationOrbViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AffirmationOrbViewModel.swift; sourceTree = "<group>"; };
+		AAF106 /* AffirmationOrbScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AffirmationOrbScene.swift; sourceTree = "<group>"; };
+		AAF108 /* AffirmationOrbView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AffirmationOrbView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -153,6 +163,8 @@
 				AA0065 /* MagicalSwirlScene.swift */,
 				AA0087 /* HarmonicBloomView.swift */,
 				AA143C /* HarmonicBloomScene.swift */,
+				AAF108 /* AffirmationOrbView.swift */,
+				AAF106 /* AffirmationOrbScene.swift */,
 			);
 			path = Games;
 			sourceTree = "<group>";
@@ -167,6 +179,7 @@
 				AA0071 /* ShapesThatSingViewModel.swift */,
 				AA0073 /* MagicalSwirlViewModel.swift */,
 				AA0086 /* HarmonicBloomViewModel.swift */,
+				AAF104 /* AffirmationOrbViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -177,6 +190,7 @@
 				AA0010 /* GameModel.swift */,
 				AA0012 /* PuzzleModel.swift */,
 				AA0075 /* SingingShapeModel.swift */,
+				AAF100 /* AffirmationOrbModel.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -197,8 +211,9 @@
 			children = (
 				AA0077 /* ShapeAudioEngine.swift */,
 				AA8F65 /* AudioSpectrumProcessor.swift */,
-			
-				AA8DE8 /* BubbleGameAudioEngine.swift */,);
+				AA8DE8 /* BubbleGameAudioEngine.swift */,
+				AAF102 /* AffirmationAudioEngine.swift */,
+			);
 			path = Audio;
 			sourceTree = "<group>";
 		};
@@ -301,7 +316,13 @@
 				AA0085 /* HarmonicBloomView.swift in Sources */,				AAA0F7 /* HarmonicBloomScene.swift in Sources */,
 				AAB9D0 /* AudioSpectrumProcessor.swift in Sources */,
 				AADFB1 /* HarmonicBloomScene.swift in Sources */,
-				AA9335 /* BubbleGameAudioEngine.swift in Sources */,);
+				AA9335 /* BubbleGameAudioEngine.swift in Sources */,
+				AAF101 /* AffirmationOrbModel.swift in Sources */,
+				AAF103 /* AffirmationAudioEngine.swift in Sources */,
+				AAF105 /* AffirmationOrbViewModel.swift in Sources */,
+				AAF107 /* AffirmationOrbScene.swift in Sources */,
+				AAF109 /* AffirmationOrbView.swift in Sources */,
+			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
@@ -443,6 +464,7 @@
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_CFBundleDisplayName = "Mind Swirl";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -473,6 +495,7 @@
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_CFBundleDisplayName = "Mind Swirl";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

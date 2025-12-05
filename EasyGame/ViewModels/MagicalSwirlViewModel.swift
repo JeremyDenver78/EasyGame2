@@ -39,7 +39,10 @@ class SwirlAudioEngine {
 
         // 2. Connect nodes in proper order: Player -> Mixer -> Output
         // Use stereo format (2 channels) for all connections
-        let format = AVAudioFormat(standardFormatWithSampleRate: 44100.0, channels: 2)!
+        guard let format = AVAudioFormat(standardFormatWithSampleRate: 44100.0, channels: 2) else {
+            print("❌ Audio Graph setup failed: format unavailable")
+            return
+        }
 
         engine.connect(touchPlayer, to: mainMixer, format: format)
         engine.connect(movePlayer, to: mainMixer, format: format)
@@ -77,7 +80,7 @@ class SwirlAudioEngine {
             return
         }
 
-        let buffer = generateSineWave(frequency: 440.0, duration: 0.3)
+        guard let buffer = generateSineWave(frequency: 440.0, duration: 0.3) else { return }
         touchPlayer.scheduleBuffer(buffer, at: nil, options: [], completionHandler: nil)
         touchPlayer.volume = Float(volume)
 
@@ -100,7 +103,7 @@ class SwirlAudioEngine {
         }
 
         if !movePlayer.isPlaying {
-            let buffer = generateNoise(duration: 1.0)
+            guard let buffer = generateNoise(duration: 1.0) else { return }
             movePlayer.scheduleBuffer(buffer, at: nil, options: .loops, completionHandler: nil)
             movePlayer.play()
         }
@@ -126,7 +129,7 @@ class SwirlAudioEngine {
             return
         }
 
-        let buffer = generateSineWave(frequency: 880.0, duration: 0.5)
+        guard let buffer = generateSineWave(frequency: 880.0, duration: 0.5) else { return }
         fadePlayer.scheduleBuffer(buffer, at: nil, options: [], completionHandler: nil)
         fadePlayer.volume = Float(volume * 0.3)
 
@@ -136,14 +139,23 @@ class SwirlAudioEngine {
     }
 
     // MARK: - Audio Buffer Generators
-    private func generateSineWave(frequency: Double, duration: Double) -> AVAudioPCMBuffer {
+    private func generateSineWave(frequency: Double, duration: Double) -> AVAudioPCMBuffer? {
         let sampleRate = 44100.0
         let frameCount = AVAudioFrameCount(sampleRate * duration)
-        let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 2)!
-        let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount)!
+        guard let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 2) else {
+            print("❌ Sine wave format unavailable")
+            return nil
+        }
+        guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount) else {
+            print("❌ Failed to allocate sine wave buffer")
+            return nil
+        }
         buffer.frameLength = frameCount
 
-        let channels = buffer.floatChannelData!
+        guard let channels = buffer.floatChannelData else {
+            print("❌ Sine wave channels unavailable")
+            return nil
+        }
 
         // Generate for both channels (stereo)
         for i in 0..<Int(frameCount) {
@@ -157,14 +169,23 @@ class SwirlAudioEngine {
         return buffer
     }
 
-    private func generateNoise(duration: Double) -> AVAudioPCMBuffer {
+    private func generateNoise(duration: Double) -> AVAudioPCMBuffer? {
         let sampleRate = 44100.0
         let frameCount = AVAudioFrameCount(sampleRate * duration)
-        let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 2)!
-        let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount)!
+        guard let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 2) else {
+            print("❌ Noise format unavailable")
+            return nil
+        }
+        guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount) else {
+            print("❌ Failed to allocate noise buffer")
+            return nil
+        }
         buffer.frameLength = frameCount
 
-        let channels = buffer.floatChannelData!
+        guard let channels = buffer.floatChannelData else {
+            print("❌ Noise channels unavailable")
+            return nil
+        }
 
         // Generate noise for both channels (stereo)
         for i in 0..<Int(frameCount) {

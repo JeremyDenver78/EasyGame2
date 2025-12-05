@@ -9,6 +9,7 @@ class SandEngine: ObservableObject {
     let width: Int
     let height: Int
     private let particleCount: Int
+    private let lock = NSLock()
 
     // Buffers
     // We use raw pointers for maximum performance (avoiding Array bounds checks in the hot loop)
@@ -56,6 +57,9 @@ class SandEngine: ObservableObject {
 
     // MARK: - Interaction
     func emit(at point: CGPoint, in screenSize: CGSize) {
+        lock.lock()
+        defer { lock.unlock() }
+
         let x = Int((point.x / screenSize.width) * CGFloat(width))
         let y = Int((point.y / screenSize.height) * CGFloat(height))
 
@@ -102,6 +106,9 @@ class SandEngine: ObservableObject {
 
     // MARK: - Physics Loop
     func update() {
+        lock.lock()
+        defer { lock.unlock() }
+
         // Iterate bottom-up, randomizing X direction to avoid bias
         // We use a separate "touched" tracker implicitly by direction of loop or strictly handling moves
         // For simplicity in this demo, strict bottom-up prevents double-moving in one frame

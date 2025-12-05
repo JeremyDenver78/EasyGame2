@@ -45,6 +45,7 @@
 		AAF105 /* AffirmationOrbViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAF104 /* AffirmationOrbViewModel.swift */; };
 		AAF107 /* AffirmationOrbScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAF106 /* AffirmationOrbScene.swift */; };
 		AAF109 /* AffirmationOrbView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAF108 /* AffirmationOrbView.swift */; };
+		AAF300 /* SandfallAudioEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAF301 /* SandfallAudioEngine.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -87,6 +88,7 @@
 		AAF104 /* AffirmationOrbViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AffirmationOrbViewModel.swift; sourceTree = "<group>"; };
 		AAF106 /* AffirmationOrbScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AffirmationOrbScene.swift; sourceTree = "<group>"; };
 		AAF108 /* AffirmationOrbView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AffirmationOrbView.swift; sourceTree = "<group>"; };
+		AAF301 /* SandfallAudioEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SandfallAudioEngine.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -213,6 +215,7 @@
 				AA8F65 /* AudioSpectrumProcessor.swift */,
 				AA8DE8 /* BubbleGameAudioEngine.swift */,
 				AAF102 /* AffirmationAudioEngine.swift */,
+				AAF301 /* SandfallAudioEngine.swift */,
 			);
 			path = Audio;
 			sourceTree = "<group>";
@@ -317,6 +320,7 @@
 				AAB9D0 /* AudioSpectrumProcessor.swift in Sources */,
 				AADFB1 /* HarmonicBloomScene.swift in Sources */,
 				AA9335 /* BubbleGameAudioEngine.swift in Sources */,
+				AAF300 /* SandfallAudioEngine.swift in Sources */,
 				AAF101 /* AffirmationOrbModel.swift in Sources */,
 				AAF103 /* AffirmationAudioEngine.swift in Sources */,
 				AAF105 /* AffirmationOrbViewModel.swift in Sources */,

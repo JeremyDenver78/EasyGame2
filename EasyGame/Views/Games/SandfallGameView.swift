@@ -38,7 +38,10 @@ struct SandfallGameView: View {
         }
         // The Game Loop
         .onAppear {
-            // Nothing to start, the TimelineView handles the tick
+            SandfallAudioEngine.shared.startSandfall()
+        }
+        .onDisappear {
+            SandfallAudioEngine.shared.stopSandfall()
         }
         .overlay(
             TimelineView(.animation) { _ in

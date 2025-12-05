@@ -31,6 +31,8 @@ class AffirmationOrbViewModel: ObservableObject {
             let text = AffirmationData.list.randomElement() ?? "I am calm"
             currentAffirmation = text
             
+            AffirmationAudioEngine.shared.nudgeUpForReveal()
+
             // Trigger Animation
             state = .morphingToText
             isButtonDisabled = true
@@ -56,6 +58,7 @@ class AffirmationOrbViewModel: ObservableObject {
 
     private func autoReturnToOrb() {
         guard state == .reading else { return }
+        AffirmationAudioEngine.shared.nudgeDownForReturn()
         state = .morphingToSphere
         isButtonDisabled = true
         buttonText = "..."

@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 // MARK: - Landing View
 struct LandingView: View {
@@ -8,6 +9,7 @@ struct LandingView: View {
     @State private var buttonOpacity: Double = 0
     @State private var heartBeat: CGFloat = 1.0
     @State private var navigateToGames = false
+    @State private var hasPlayedLaunchSound = false
 
     var body: some View {
         NavigationStack {
@@ -73,6 +75,11 @@ struct LandingView: View {
 
                     // Start button
                     Button(action: {
+                        // Gentle haptic + launch chime on tap
+                        let generator = UIImpactFeedbackGenerator(style: .medium)
+                        generator.impactOccurred(intensity: 1.0) // stronger (≈3x) tap feedback
+                        SwirlAudioEngine.shared.playLaunchSound()
+
                         navigateToGames = true
                     }) {
                         Text("Start Games")
@@ -114,6 +121,12 @@ struct LandingView: View {
             // Gentle heart pulse
             withAnimation(.easeInOut(duration: 2).repeatForever(autoreverses: true)) {
                 heartBeat = 1.05
+            }
+
+            // Play launch chime once on first appearance
+            if !hasPlayedLaunchSound {
+                SwirlAudioEngine.shared.playLaunchSound()
+                hasPlayedLaunchSound = true
             }
         }
     }

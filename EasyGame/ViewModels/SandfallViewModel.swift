@@ -2,6 +2,7 @@ import Foundation
 import Combine
 import UIKit
 import CoreGraphics
+import AVFoundation
 
 // MARK: - High Performance Sand Engine
 class SandEngine: ObservableObject {
@@ -24,6 +25,7 @@ class SandEngine: ObservableObject {
     // State
     @Published var lastImage: UIImage?
     private var isDisposed = false
+    private var touchActiveFrames = 0
 
     // Physics Constants
     private let gravity: Float = 0.2
@@ -59,6 +61,9 @@ class SandEngine: ObservableObject {
     func emit(at point: CGPoint, in screenSize: CGSize) {
         lock.lock()
         defer { lock.unlock() }
+
+        // Keep audio active for a short window after touch
+        touchActiveFrames = 45
 
         let x = Int((point.x / screenSize.width) * CGFloat(width))
         let y = Int((point.y / screenSize.height) * CGFloat(height))
@@ -109,6 +114,8 @@ class SandEngine: ObservableObject {
         lock.lock()
         defer { lock.unlock() }
 
+        var landingEvents = 0
+
         // Iterate bottom-up, randomizing X direction to avoid bias
         // We use a separate "touched" tracker implicitly by direction of loop or strictly handling moves
         // For simplicity in this demo, strict bottom-up prevents double-moving in one frame
@@ -124,6 +131,8 @@ class SandEngine: ObservableObject {
                 let index = y * width + x
 
                 if stateBuffer[index] > 0 { // Is Sand
+
+                    var didMove = false
 
                     // 1. Apply Gravity
                     var vel = velocityBuffer[index]
@@ -149,10 +158,16 @@ class SandEngine: ObservableObject {
                         if stateBuffer[destIndex] == 0 {
                             // Move Particle
                             moveParticle(from: index, to: destIndex, vel: vel)
-                            // moved = true
+                            didMove = true
+
+                            // If we landed on the bottom row, count a soft landing
+                            if actualDestY >= height - 1 {
+                                landingEvents += 1
+                            }
                         } else {
                             // Hit something. Reset velocity and try to slide.
                             velocityBuffer[index] = 1.0 // Reset energy
+                            landingEvents += 1 // Collision with existing sand counts as a landing event
 
                             // Try diagonals (Sliding)
                             let belowIndex = (y + 1) * width + x
@@ -170,16 +185,34 @@ class SandEngine: ObservableObject {
                                     // Pick random
                                     let goLeft = Bool.random()
                                     moveParticle(from: index, to: goLeft ? belowLeft : belowRight, vel: 1.0)
+                                    didMove = true
                                 } else if canGoLeft {
                                     moveParticle(from: index, to: belowLeft, vel: 1.0)
+                                    didMove = true
                                 } else if canGoRight {
                                     moveParticle(from: index, to: belowRight, vel: 1.0)
+                                    didMove = true
                                 }
                             }
+                        }
+
+                        // If we couldn't move anywhere, count as a landing event
+                        if !didMove {
+                            landingEvents += 1
                         }
                     }
                 }
             }
+        }
+
+        // Trigger a gentle landing sound only shortly after touch interactions
+        if touchActiveFrames > 0 && landingEvents > 0 {
+            let normalized = min(1.0, Double(landingEvents) / Double(width))
+            SandfallAudioEngine.shared.playLandingSound(intensity: normalized)
+        }
+
+        if touchActiveFrames > 0 {
+            touchActiveFrames -= 1
         }
 
         // Generate Image from Buffer
